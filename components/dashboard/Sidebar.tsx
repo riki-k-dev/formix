@@ -72,14 +72,16 @@ export default function Sidebar({ isCollapsed }: SidebarProps) {
           )}
         >
           <div className="flex items-center gap-1 overflow-hidden">
-            <Image
-              src="/i2-t2.png"
-              alt="Formix Logo"
-              width={38}
-              height={38}
-              className="shrink-0 object-contain"
-              priority
-            />
+            <div className="border-zinc-800 border rounded-lg p-px overflow-hidden flex items-center justify-center">
+              <Image
+                src="/i2-t3.png"
+                alt="Formix Logo"
+                width={38}
+                height={38}
+                className="shrink-0 object-contain rounded-md"
+                priority
+              />
+            </div>
             {!isCollapsed && (
               <div className="flex items-center ml-0.5">
                 <span className="text-neutral-200 font-bold text-lg whitespace-nowrap tracking-tight mr-14">
