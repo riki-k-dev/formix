@@ -71,3 +71,12 @@ export const forms = pgTable("forms", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
+
+export const submissions = pgTable("submissions", {
+  id: text("id").primaryKey(),
+  formId: text("formId")
+    .notNull()
+    .references(() => forms.id, { onDelete: "cascade" }),
+  data: text("data").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
