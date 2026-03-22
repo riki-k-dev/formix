@@ -12,7 +12,7 @@ export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false); // New state for Eye Icon
+  const [showPassword, setShowPassword] = useState(false);
 
   // Form states
   const [name, setName] = useState("");

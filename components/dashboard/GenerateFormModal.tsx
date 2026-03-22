@@ -1,7 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Sparkles, Terminal, CheckCircle2, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  X,
+  Sparkles,
+  Terminal,
+  CheckCircle2,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
 
 interface GenerateFormModalProps {
   isOpen: boolean;
@@ -16,50 +24,75 @@ const suggestions = [
 
 const loadingSteps = [
   "Analyzing form requirements...",
-  "Generating JSON Schema...",
-  "Provisioning API endpoints...",
-  "Building Micro-UI...",
-  "Finalizing WhatsApp integration...",
+  "Prompting Groq AI engine...",
+  "Structuring JSON Schema...",
+  "Saving to Neon Database...",
+  "Provisioning headless API...",
 ];
 
 export default function GenerateFormModal({
   isOpen,
   onClose,
 }: GenerateFormModalProps) {
+  const router = useRouter();
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-
-  const isDone = currentStep === loadingSteps.length;
+  const [error, setError] = useState<string | null>(null);
+  const [isDone, setIsDone] = useState(false);
 
   useEffect(() => {
-    if (!isGenerating) return;
+    if (!isGenerating || isDone || error) return;
 
-    if (currentStep < loadingSteps.length) {
+    if (currentStep < loadingSteps.length - 1) {
       const timer = setTimeout(() => {
         setCurrentStep((prev) => prev + 1);
-      }, 1200);
-
-      return () => clearTimeout(timer);
-    } else {
-      const timer = setTimeout(() => {
-        // router.push('/dashboard/forms/new-id')
-        setIsGenerating(false);
-        setCurrentStep(0);
-        setPrompt("");
-        onClose();
-      }, 2000);
-
+      }, 800);
       return () => clearTimeout(timer);
     }
-  }, [isGenerating, currentStep, onClose]);
+  }, [isGenerating, currentStep, isDone, error]);
+
+  const handleGenerate = async () => {
+    if (!prompt.trim()) return;
+
+    setIsGenerating(true);
+    setError(null);
+    setIsDone(false);
+    setCurrentStep(0);
+
+    try {
+      const res = await fetch("/api/forms/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to generate form");
+      }
+
+      setCurrentStep(loadingSteps.length);
+      setIsDone(true);
+
+      setTimeout(() => {
+        router.refresh();
+        setPrompt("");
+        setIsGenerating(false);
+        setIsDone(false);
+        onClose();
+      }, 1500);
+    } catch (err: unknown) {
+      console.error(err);
+      const errorMessage =
+        err instanceof Error ? err.message : "An unexpected error occurred.";
+      setError(errorMessage);
+      setIsGenerating(false);
+    }
+  };
 
   if (!isOpen) return null;
-
-  const handleGenerate = () => {
-    if (!prompt.trim()) return;
-    setIsGenerating(true);
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
@@ -67,7 +100,6 @@ export default function GenerateFormModal({
         className="w-full max-w-2xl bg-[#0a0a0a] border border-neutral-800 rounded-xl shadow-2xl overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-800">
           <div className="flex items-center gap-2 text-neutral-200 font-medium">
             <Sparkles size={18} className="text-neutral-400" />
@@ -75,17 +107,22 @@ export default function GenerateFormModal({
           </div>
           <button
             onClick={onClose}
-            disabled={isGenerating}
+            disabled={isGenerating && !error}
             className="text-neutral-500 hover:text-neutral-300 transition-colors disabled:opacity-50"
           >
             <X size={20} />
           </button>
         </div>
 
-        {/* Body Content */}
         <div className="p-5">
-          {!isGenerating ? (
-            // Input Mode
+          {error && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-3 text-red-400 text-sm">
+              <AlertCircle size={16} className="shrink-0" />
+              <p>{error}</p>
+            </div>
+          )}
+
+          {!isGenerating || error ? (
             <div className="space-y-5 animate-in slide-in-from-bottom-2 fade-in duration-300">
               <textarea
                 value={prompt}
@@ -113,7 +150,6 @@ export default function GenerateFormModal({
               </div>
             </div>
           ) : (
-            // Loading/Terminal Mode
             <div className="h-44 bg-neutral-950 border border-neutral-800 rounded-lg p-4 font-mono text-sm overflow-hidden flex flex-col relative">
               <div className="flex items-center gap-2 text-neutral-500 mb-4 border-b border-neutral-800/50 pb-2">
                 <Terminal size={14} />
@@ -141,7 +177,7 @@ export default function GenerateFormModal({
                 {isDone && (
                   <div className="text-white mt-4 flex items-center gap-2 animate-in fade-in duration-300">
                     <Sparkles size={14} className="text-yellow-400" />
-                    <span>Done! Redirecting to builder...</span>
+                    <span>Done! Schema saved securely.</span>
                   </div>
                 )}
               </div>
@@ -149,8 +185,7 @@ export default function GenerateFormModal({
           )}
         </div>
 
-        {/* Footer */}
-        {!isGenerating && (
+        {(!isGenerating || error) && (
           <div className="px-5 py-4 border-t border-neutral-800 bg-neutral-900/20 flex justify-end gap-3">
             <button
               onClick={onClose}
