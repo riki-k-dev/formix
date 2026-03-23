@@ -10,8 +10,15 @@ import {
   Lock,
   MessageSquare,
   Webhook,
+  Copy,
+  Edit2,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import GenerateFormModal from "@/components/dashboard/GenerateFormModal";
+import Link from "next/link";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 type Form = {
   id: string;
@@ -29,11 +36,17 @@ export default function FormsClient({
 }: {
   initialForms: Form[];
 }) {
+  const router = useRouter();
+
+  const [formsList, setFormsList] = useState<Form[]>(initialForms);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
 
-  const filteredForms = initialForms.filter((form) => {
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const filteredForms = formsList.filter((form) => {
     const matchesSearch =
       form.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (form.description &&
@@ -45,6 +58,43 @@ export default function FormsClient({
 
     return matchesSearch && matchesStatus;
   });
+
+  const handleCopyLink = (formId: string) => {
+    const url = `${window.location.origin}/to/${formId}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Public link copied to clipboard!");
+    setActiveDropdown(null);
+  };
+
+  const handleDelete = async (formId: string, formName: string) => {
+    if (
+      !confirm(
+        `Are you sure you want to delete "${formName}"? This will delete all its data.`,
+      )
+    ) {
+      setActiveDropdown(null);
+      return;
+    }
+
+    setDeletingId(formId);
+    try {
+      const res = await fetch(`/api/forms/delete?formId=${formId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) throw new Error("Failed to delete form");
+
+      setFormsList(formsList.filter((f) => f.id !== formId));
+      toast.success("Form deleted successfully");
+      router.refresh();
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to delete form");
+    } finally {
+      setDeletingId(null);
+      setActiveDropdown(null);
+    }
+  };
 
   return (
     <>
@@ -69,7 +119,7 @@ export default function FormsClient({
           </button>
         </div>
 
-        {/* Utilities Section (Search & Filter) */}
+        {/* Utilities Section */}
         <div className="flex items-center justify-between mb-8 gap-4">
           <div className="relative flex-1 max-w-md">
             <Search
@@ -102,7 +152,7 @@ export default function FormsClient({
           {filteredForms.map((form) => (
             <div
               key={form.id}
-              className="group bg-neutral-900/30 border border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/50 rounded-xl p-5 transition-all duration-200 flex flex-col cursor-pointer"
+              className="group bg-neutral-900/30 border border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/50 rounded-xl p-5 transition-all duration-200 flex flex-col"
             >
               {/* Card Header */}
               <div className="flex items-start justify-between mb-3">
@@ -119,13 +169,62 @@ export default function FormsClient({
                     {form.name}
                   </h3>
                 </div>
-                <button className="text-neutral-500 hover:text-neutral-300 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <MoreHorizontal size={18} />
-                </button>
+
+                <div className="relative">
+                  <button
+                    onClick={() =>
+                      setActiveDropdown(
+                        activeDropdown === form.id ? null : form.id,
+                      )
+                    }
+                    className="text-neutral-500 hover:text-neutral-300 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-neutral-800"
+                  >
+                    <MoreHorizontal size={18} />
+                  </button>
+
+                  {activeDropdown === form.id && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setActiveDropdown(null)}
+                      ></div>
+
+                      <div className="absolute right-0 mt-1 w-40 bg-[#111] border border-neutral-800 rounded-lg shadow-xl py-1 z-20 animate-in fade-in zoom-in-95 duration-100">
+                        <button
+                          onClick={() => handleCopyLink(form.id)}
+                          className="w-full text-left px-3 py-2 text-xs text-neutral-300 hover:bg-neutral-800 flex items-center gap-2 transition-colors"
+                        >
+                          <Copy size={14} /> Copy Public Link
+                        </button>
+
+                        <Link
+                          href={`/dashboard/forms/${form.id}`}
+                          className="w-full text-left px-3 py-2 text-xs text-neutral-300 hover:bg-neutral-800 flex items-center gap-2 transition-colors"
+                        >
+                          <Edit2 size={14} /> Edit Schema
+                        </Link>
+
+                        <div className="h-px bg-neutral-800 my-1 w-full"></div>
+
+                        <button
+                          onClick={() => handleDelete(form.id, form.name)}
+                          disabled={deletingId === form.id}
+                          className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 flex items-center gap-2 transition-colors disabled:opacity-50"
+                        >
+                          {deletingId === form.id ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <Trash2 size={14} />
+                          )}
+                          Delete Form
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
 
-              {/* Description */}
-              <p className="text-neutral-500 text-xs mb-6 line-clamp-2 min-h-[32px]">
+              <p className="text-neutral-500 text-xs mb-6 line-clamp-2 min-h-8">
                 {form.description || "No description provided."}
               </p>
 
