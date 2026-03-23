@@ -79,3 +79,10 @@ export const submissions = pgTable("submissions", {
   data: text("data").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
+
+export const apiKeys = pgTable("api_keys", {
+  id: text("id").primaryKey(),
+  userId: text("userId").notNull(),
+  key: text("key").notNull().unique(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
