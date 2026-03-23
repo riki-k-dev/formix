@@ -58,16 +58,15 @@ export const verification = pgTable("verification", {
 
 export const forms = pgTable("forms", {
   id: text("id").primaryKey(),
-  userId: text("userId")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
+  userId: text("userId").notNull(),
   name: text("name").notNull(),
   description: text("description"),
-  schema: text("schema"),
-  status: text("status").default("draft").notNull(),
+  schema: text("schema").notNull(),
+  status: text("status").default("active").notNull(),
   submissionsCount: integer("submissionsCount").default(0).notNull(),
   hasWhatsapp: boolean("hasWhatsapp").default(false).notNull(),
   hasWebhook: boolean("hasWebhook").default(false).notNull(),
+  webhookUrl: text("webhookUrl"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });

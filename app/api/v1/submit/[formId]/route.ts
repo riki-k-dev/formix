@@ -1,4 +1,3 @@
-// app/api/v1/submit/[formId]/route.ts
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { forms, submissions } from "@/db/schema";
@@ -44,7 +43,6 @@ export async function POST(
 
     // 3. Parse the incoming submitted data
     const body = await req.json();
-
     const submissionData = body.data || body;
 
     if (!submissionData || Object.keys(submissionData).length === 0) {
@@ -70,7 +68,31 @@ export async function POST(
       .set({ submissionsCount: sql`${forms.submissionsCount} + 1` })
       .where(eq(forms.id, formRecord.id));
 
-    // 7. Return success to the developer
+    if (formRecord.hasWebhook && formRecord.webhookUrl) {
+      console.log(
+        `Triggering webhook for form ${formRecord.id} to ${formRecord.webhookUrl}`,
+      );
+
+      fetch(formRecord.webhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": "Formix-Webhook-Engine/1.0",
+        },
+        body: JSON.stringify({
+          event: "form.submitted",
+          formId: formRecord.id,
+          formName: formRecord.name,
+          submissionId: submissionId,
+          timestamp: new Date().toISOString(),
+          data: submissionData,
+        }),
+      }).catch((err) => {
+        console.error(`Webhook Delivery Failed for ${formRecord.id}:`, err);
+      });
+    }
+
+    // 7. Return success to the developer/frontend
     return NextResponse.json(
       { success: true, message: "Submission successful", submissionId },
       { status: 201, headers: corsHeaders },

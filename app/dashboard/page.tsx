@@ -1,4 +1,3 @@
-// app/dashboard/page.tsx
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { forms, submissions } from "@/db/schema";
@@ -26,8 +25,11 @@ export default async function DashboardOverview() {
 
   // 3. Calculate Stats
   const totalForms = userForms.length;
-  const activeForms = userForms.filter(f => f.status === "active").length;
-  const totalSubmissions = userForms.reduce((acc, form) => acc + form.submissionsCount, 0);
+  const activeForms = userForms.filter((f) => f.status === "active").length;
+  const totalSubmissions = userForms.reduce(
+    (acc, form) => acc + form.submissionsCount,
+    0,
+  );
 
   // 4. Fetch the 5 most recent submissions across all forms
   const recentSubmissionsRaw = await db
@@ -43,21 +45,21 @@ export default async function DashboardOverview() {
     .limit(5);
 
   // Format dates securely for the client
-  const recentSubmissions = recentSubmissionsRaw.map(sub => ({
+  const recentSubmissions = recentSubmissionsRaw.map((sub) => ({
     ...sub,
-    createdAt: sub.createdAt.toISOString()
+    createdAt: sub.createdAt.toISOString(),
   }));
 
   const userName = session.user.name?.split(" ")[0] || "Founder";
 
   return (
-    <DashboardClient 
+    <DashboardClient
       userName={userName}
       stats={{
         totalForms,
         activeForms,
         totalSubmissions,
-        avgConversion: totalForms > 0 ? "42.5%" : "0%"
+        avgConversion: totalForms > 0 ? "42.5%" : "0%",
       }}
       recentSubmissions={recentSubmissions}
     />

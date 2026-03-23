@@ -1,4 +1,3 @@
-// app/dashboard/dashboard-client.tsx
 "use client";
 
 import { useState } from "react";
@@ -32,7 +31,6 @@ export default function DashboardClient({
   return (
     <>
       {stats.totalForms === 0 ? (
-        /* ================= EMPTY STATE (FOR NEW USERS) ================= */
         <div className="max-w-6xl mx-auto p-8 md:p-10 animate-in fade-in duration-300">
           {/* Header Section */}
           <div className="mb-10">
@@ -40,7 +38,8 @@ export default function DashboardClient({
               Overview
             </h1>
             <p className="text-neutral-400 text-sm">
-              Get a high-level view of your active forms, API usage, and recent submissions.
+              Get a high-level view of your active forms, API usage, and recent
+              submissions.
             </p>
           </div>
 
@@ -65,7 +64,8 @@ export default function DashboardClient({
                   1
                 </span>
                 <p className="text-neutral-300 pt-0.5">
-                  <span className="text-white font-medium">Prompt:</span> Describe your form requirements.
+                  <span className="text-white font-medium">Prompt:</span>{" "}
+                  Describe your form requirements.
                 </p>
               </div>
 
@@ -74,7 +74,8 @@ export default function DashboardClient({
                   2
                 </span>
                 <p className="text-neutral-300 pt-0.5">
-                  <span className="text-white font-medium">Generate:</span> Get instant JSON schemas and APIs.
+                  <span className="text-white font-medium">Generate:</span> Get
+                  instant JSON schemas and APIs.
                 </p>
               </div>
 
@@ -83,7 +84,8 @@ export default function DashboardClient({
                   3
                 </span>
                 <p className="text-neutral-300 pt-0.5">
-                  <span className="text-white font-medium">Ship:</span> Connect the API or share the micro-form.
+                  <span className="text-white font-medium">Ship:</span> Connect
+                  the API or share the micro-form.
                 </p>
               </div>
             </div>
@@ -99,7 +101,6 @@ export default function DashboardClient({
           </div>
         </div>
       ) : (
-        /* ================= DATA STATE (FOR ACTIVE USERS) ================= */
         <div className="max-w-6xl mx-auto p-8 md:p-10 animate-in fade-in duration-300">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div>
@@ -110,7 +111,7 @@ export default function DashboardClient({
                 Here&apos;s what&apos;s happening with your forms today.
               </p>
             </div>
-            
+
             {/* Added Generate Button to Data View */}
             <button
               onClick={() => setIsModalOpen(true)}
@@ -192,7 +193,8 @@ export default function DashboardClient({
                         New submission received
                       </p>
                       <p className="text-xs text-neutral-500">
-                        Form: <span className="text-neutral-400">{sub.formName}</span>
+                        Form:{" "}
+                        <span className="text-neutral-400">{sub.formName}</span>
                       </p>
                     </div>
                     <div className="text-xs text-neutral-500 font-mono">
@@ -211,7 +213,6 @@ export default function DashboardClient({
         </div>
       )}
 
-      {/* The Modal Component runs for both states */}
       <GenerateFormModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
