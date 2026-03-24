@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { forms, submissions } from "@/db/schema";
+import { forms, submissions, apiKeys } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import crypto from "crypto";
 
@@ -19,29 +19,57 @@ export async function POST(
   { params }: { params: { formId: string } },
 ) {
   try {
-    // 1. Get the form ID from the URL
     const { formId } = await params;
 
-    // 2. Check if the form exists in our database
     const formRecord = await db.query.forms.findFirst({
       where: eq(forms.id, formId),
     });
 
-    if (!formRecord) {
+    if (!formRecord || formRecord.status !== "active") {
       return NextResponse.json(
-        { error: "Form not found" },
+        { error: "Form not found or inactive" },
         { status: 404, headers: corsHeaders },
       );
     }
 
-    if (formRecord.status !== "active") {
-      return NextResponse.json(
-        { error: "This form is currently inactive" },
-        { status: 400, headers: corsHeaders },
-      );
+    const origin =
+      req.headers.get("origin") || req.headers.get("referer") || "";
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "";
+    const isInternalRequest =
+      origin.includes("localhost:3000") || (appUrl && origin.includes(appUrl));
+
+    if (!isInternalRequest) {
+      const authHeader = req.headers.get("authorization");
+
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return NextResponse.json(
+          {
+            error:
+              "Unauthorized: Missing or invalid API Key. Please provide 'Authorization: Bearer YOUR_KEY' in headers.",
+          },
+          { status: 401, headers: corsHeaders },
+        );
+      }
+
+      const providedKey = authHeader.split(" ")[1];
+
+      const validKeyRecordArray = await db
+        .select()
+        .from(apiKeys)
+        .where(eq(apiKeys.key, providedKey))
+        .limit(1);
+
+      const validKeyRecord = validKeyRecordArray[0];
+
+      if (!validKeyRecord || validKeyRecord.userId !== formRecord.userId) {
+        return NextResponse.json(
+          { error: "Unauthorized: Invalid API Key for this form." },
+          { status: 403, headers: corsHeaders },
+        );
+      }
     }
 
-    // 3. Parse the incoming submitted data
     const body = await req.json();
     const submissionData = body.data || body;
 
@@ -52,27 +80,20 @@ export async function POST(
       );
     }
 
-    // 4. Generate unique ID for this submission
     const submissionId = `sub_${crypto.randomUUID().replace(/-/g, "").substring(0, 12)}`;
 
-    // 5. Save the submission to the database
     await db.insert(submissions).values({
       id: submissionId,
       formId: formRecord.id,
       data: JSON.stringify(submissionData),
     });
 
-    // 6. Update the submission count on the main form table
     await db
       .update(forms)
       .set({ submissionsCount: sql`${forms.submissionsCount} + 1` })
       .where(eq(forms.id, formRecord.id));
 
     if (formRecord.hasWebhook && formRecord.webhookUrl) {
-      console.log(
-        `Triggering webhook for form ${formRecord.id} to ${formRecord.webhookUrl}`,
-      );
-
       fetch(formRecord.webhookUrl, {
         method: "POST",
         headers: {
@@ -87,12 +108,9 @@ export async function POST(
           timestamp: new Date().toISOString(),
           data: submissionData,
         }),
-      }).catch((err) => {
-        console.error(`Webhook Delivery Failed for ${formRecord.id}:`, err);
-      });
+      }).catch((err) => console.error(`Webhook Delivery Failed:`, err));
     }
 
-    // 7. Return success to the developer/frontend
     return NextResponse.json(
       { success: true, message: "Submission successful", submissionId },
       { status: 201, headers: corsHeaders },
