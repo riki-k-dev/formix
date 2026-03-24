@@ -18,6 +18,7 @@ export default async function SubmissionsPage() {
   const data = await db
     .select({
       id: submissions.id,
+      formId: forms.id,
       formName: forms.name,
       data: submissions.data,
       createdAt: submissions.createdAt,
@@ -37,6 +38,7 @@ export default async function SubmissionsPage() {
 
     return {
       id: sub.id,
+      formId: sub.formId,
       formName: sub.formName,
       data: parsedData,
       channel: "API",
