@@ -1,4 +1,3 @@
-// app/dashboard/layout.tsx
 "use client";
 
 import { useState } from "react";
@@ -14,6 +13,9 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { createAuthClient } from "better-auth/react";
+
+const authClient = createAuthClient();
 
 export default function DashboardLayout({
   children,
@@ -28,17 +30,20 @@ export default function DashboardLayout({
   const handleSignOut = async () => {
     setIsSigningOut(true);
     try {
-      const res = await fetch("/api/auth/sign-out", {
-        method: "POST",
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            toast.success("Signed out successfully");
+            router.push("/login");
+          },
+          onError: (ctx) => {
+            toast.error(ctx.error.message || "Error signing out");
+            setIsSigningOut(false);
+          },
+        },
       });
-
-      if (!res.ok) throw new Error("Logout failed");
-
-      toast.success("Signed out successfully");
-      router.push("/login");
     } catch (error) {
       console.error(error);
-      toast.error("Error signing out");
       setIsSigningOut(false);
     }
   };
