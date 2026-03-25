@@ -14,6 +14,8 @@ export const user = pgTable("user", {
   image: text("image"),
   createdAt: timestamp("createdAt").notNull(),
   updatedAt: timestamp("updatedAt").notNull(),
+  emailNotifications: boolean("email_notifications").default(true),
+  marketingEmails: boolean("marketing_emails").default(false),
 });
 
 export const session = pgTable("session", {
@@ -85,4 +87,18 @@ export const apiKeys = pgTable("api_keys", {
   userId: text("userId").notNull(),
   key: text("key").notNull().unique(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const activities = pgTable("activities", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  type: text("type").notNull().default("info"),
+  read: boolean("read").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
