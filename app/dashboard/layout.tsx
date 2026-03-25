@@ -1,8 +1,19 @@
+// app/dashboard/layout.tsx
 "use client";
 
 import { useState } from "react";
 import Sidebar from "@/components/dashboard/Sidebar";
-import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import {
+  PanelLeftClose,
+  PanelLeftOpen,
+  User,
+  Settings,
+  LogOut,
+  Loader2,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export default function DashboardLayout({
   children,
@@ -10,6 +21,27 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    try {
+      const res = await fetch("/api/auth/sign-out", {
+        method: "POST",
+      });
+
+      if (!res.ok) throw new Error("Logout failed");
+
+      toast.success("Signed out successfully");
+      router.push("/login");
+    } catch (error) {
+      console.error(error);
+      toast.error("Error signing out");
+      setIsSigningOut(false);
+    }
+  };
 
   return (
     <div className="flex h-screen bg-[#0a0a0a] text-neutral-200 font-sans overflow-hidden">
@@ -19,7 +51,7 @@ export default function DashboardLayout({
         <header className="h-16 flex items-center justify-between px-6 border-b border-neutral-800 shrink-0">
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="text-neutral-500 hover:text-neutral-300 transition-colors"
+            className="text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer"
             title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           >
             {isCollapsed ? (
@@ -29,7 +61,66 @@ export default function DashboardLayout({
             )}
           </button>
 
-          <div className="w-6 h-6 bg-neutral-200 rounded-sm shrink-0 cursor-pointer"></div>
+          {/* Premium User Profile Dropdown */}
+          <div className="relative">
+            {/* Trigger Button */}
+            <button
+              onClick={() => setIsProfileOpen(!isProfileOpen)}
+              className="w-8 h-8 bg-neutral-800 border border-neutral-700 hover:border-neutral-600 rounded-md flex items-center justify-center transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-neutral-500"
+            >
+              <User size={16} className="text-neutral-300" />
+            </button>
+
+            {/* Dropdown Menu */}
+            {isProfileOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setIsProfileOpen(false)}
+                ></div>
+
+                <div className="absolute right-0 mt-2 w-52 bg-[#0a0a0a] border border-neutral-800 rounded-xl shadow-2xl py-1 z-50 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="px-4 py-3 border-b border-neutral-800/80 mb-1">
+                    <p className="text-sm font-medium text-neutral-200">
+                      My Account
+                    </p>
+                    <p className="text-xs text-neutral-500 truncate mt-0.5">
+                      Manage preferences
+                    </p>
+                  </div>
+
+                  {/* Settings Link */}
+                  <div className="px-1.5 py-0.5">
+                    <Link
+                      href="/dashboard/settings"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-2.5 px-2.5 py-2 text-sm text-neutral-300 hover:text-white hover:bg-neutral-900 rounded-md transition-colors"
+                    >
+                      <Settings size={15} /> Settings
+                    </Link>
+                  </div>
+
+                  <div className="h-px bg-neutral-800/80 my-1 mx-3"></div>
+
+                  {/* Sign Out Button */}
+                  <div className="px-1.5 pb-1 pt-0.5">
+                    <button
+                      onClick={handleSignOut}
+                      disabled={isSigningOut}
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-md transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      {isSigningOut ? (
+                        <Loader2 size={15} className="animate-spin" />
+                      ) : (
+                        <LogOut size={15} />
+                      )}
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         </header>
 
         <main className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">

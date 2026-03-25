@@ -383,7 +383,7 @@ export default function SubmissionsClient({
               <button
                 onClick={confirmDelete}
                 disabled={isDeleting}
-                className="flex-1 px-4 py-2 bg-transparent text-white border border-neutral-800 rounded-md text-sm hover:bg-neutral-900 transition-colors cursor-pointer disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-transparent text-white border border-red-500/50 rounded-md text-sm hover:bg-red-500/20 transition-colors cursor-pointer disabled:cursor-not-allowed"
               >
                 {isDeleting ? (
                   <Loader2 size={16} className="animate-spin" />
