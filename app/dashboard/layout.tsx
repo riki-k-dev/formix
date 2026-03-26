@@ -27,6 +27,9 @@ export default function DashboardLayout({
   const [isSigningOut, setIsSigningOut] = useState(false);
   const router = useRouter();
 
+  const { data: session } = authClient.useSession();
+  const user = session?.user;
+
   const handleSignOut = async () => {
     setIsSigningOut(true);
     try {
@@ -68,12 +71,25 @@ export default function DashboardLayout({
 
           {/* Premium User Profile Dropdown */}
           <div className="relative">
-            {/* Trigger Button */}
+            {/* Trigger Button - NOW DYNAMIC */}
             <button
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="w-8 h-8 bg-neutral-800 border border-neutral-700 hover:border-neutral-600 rounded-md flex items-center justify-center transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-neutral-500"
+              className="w-8 h-8 bg-neutral-800 border border-neutral-700 hover:border-neutral-600 rounded-md flex items-center justify-center transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-neutral-500 overflow-hidden"
             >
-              <User size={16} className="text-neutral-300" />
+              {user?.image ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={user.image}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              ) : user?.name ? (
+                <span className="text-xs font-bold text-neutral-300 uppercase">
+                  {user.name.charAt(0)}
+                </span>
+              ) : (
+                <User size={16} className="text-neutral-300" />
+              )}
             </button>
 
             {/* Dropdown Menu */}
@@ -86,11 +102,11 @@ export default function DashboardLayout({
 
                 <div className="absolute right-0 mt-2 w-52 bg-[#0a0a0a] border border-neutral-800 rounded-xl shadow-2xl py-1 z-50 animate-in fade-in zoom-in-95 duration-200">
                   <div className="px-4 py-3 border-b border-neutral-800/80 mb-1">
-                    <p className="text-sm font-medium text-neutral-200">
-                      My Account
+                    <p className="text-sm font-medium text-neutral-200 truncate">
+                      {user?.name || "My Account"}
                     </p>
                     <p className="text-xs text-neutral-500 truncate mt-0.5">
-                      Manage preferences
+                      {user?.email || "Manage preferences"}
                     </p>
                   </div>
 
