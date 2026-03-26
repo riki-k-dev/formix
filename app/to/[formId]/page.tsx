@@ -7,7 +7,7 @@ import FormRenderer from "./FormRenderer";
 export default async function PublicFormPage({
   params,
 }: {
-  params: { formId: string };
+  params: Promise<{ formId: string }>;
 }) {
   const { formId } = await params;
 

@@ -16,7 +16,7 @@ export async function OPTIONS() {
 
 export async function POST(
   req: Request,
-  { params }: { params: { formId: string } },
+  { params }: { params: Promise<{ formId: string }> },
 ) {
   try {
     const { formId } = await params;

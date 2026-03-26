@@ -9,7 +9,7 @@ import EditFormClient from "./edit-client";
 export default async function EditFormPage({
   params,
 }: {
-  params: { formId: string };
+  params: Promise<{ formId: string }>;
 }) {
   const { formId } = await params;
 
