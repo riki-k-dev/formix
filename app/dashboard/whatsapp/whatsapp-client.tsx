@@ -1,0 +1,654 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import {
+  MessageSquare,
+  Smartphone,
+  Plus,
+  Power,
+  Settings2,
+  CheckCircle2,
+  MoreVertical,
+  Trash2,
+  Loader2,
+  Share2,
+  SendHorizontal,
+  AlertTriangle,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import NewWhatsAppFlowModal from "@/components/dashboard/NewWhatsAppFlowModal";
+import ConnectWhatsAppModal from "@/components/dashboard/ConnectWhatsAppModal";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+
+type PreviewMessage = {
+  sender: "user" | "bot" | string;
+  text: string;
+};
+
+type Flow = {
+  id: string;
+  formName: string;
+  phone: string;
+  status: string;
+  messagesSent: number;
+  previewChat: PreviewMessage[];
+};
+
+type AvailableForm = {
+  id: string;
+  name: string;
+};
+
+export default function WhatsAppFlowsClient({
+  initialFlows,
+  availableForms,
+}: {
+  initialFlows: Flow[];
+  availableForms: AvailableForm[];
+}) {
+  const router = useRouter();
+  const [flows, setFlows] = useState<Flow[]>(initialFlows);
+
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "draft">(
+    "all",
+  );
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  const filteredFlows = flows.filter((f) =>
+    filterStatus === "all" ? true : f.status === filterStatus,
+  );
+
+  const [activeFlowId, setActiveFlowId] = useState<string | null>(
+    filteredFlows.length > 0 ? filteredFlows[0].id : null,
+  );
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const [flowToDelete, setFlowToDelete] = useState<string | null>(null);
+
+  const [chatMessages, setChatMessages] = useState<PreviewMessage[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [simStep, setSimStep] = useState(0);
+  const [simData, setSimData] = useState({});
+  const [isBotTyping, setIsBotTyping] = useState(false);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+
+  const activeFlow = flows.find((f) => f.id === activeFlowId) || flows[0];
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        filterRef.current &&
+        !filterRef.current.contains(event.target as Node)
+      ) {
+        setIsFilterOpen(false);
+      }
+    };
+    if (isFilterOpen)
+      document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isFilterOpen]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setActiveDropdown(null);
+      }
+    };
+    if (activeDropdown)
+      document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [activeDropdown]);
+
+  const handleFilterSelect = (status: "all" | "active" | "draft") => {
+    setFilterStatus(status);
+    setIsFilterOpen(false);
+
+    const newFilteredList = flows.filter((f) =>
+      status === "all" ? true : f.status === status,
+    );
+    if (newFilteredList.length > 0) {
+      if (!newFilteredList.find((f) => f.id === activeFlowId)) {
+        setActiveFlowId(newFilteredList[0].id);
+      }
+    } else {
+      setActiveFlowId(null);
+    }
+  };
+
+  useEffect(() => {
+    if (activeFlow) {
+      setChatMessages(activeFlow.previewChat.slice(0, 1));
+      setSimStep(0);
+      setSimData({});
+    }
+  }, [activeFlowId, activeFlow]);
+
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [chatMessages, isBotTyping]);
+
+  const handleToggleStatus = async (flowId: string, currentStatus: string) => {
+    setIsProcessing(true);
+    const newStatus = currentStatus === "active" ? "draft" : "active";
+    setFlows(
+      flows.map((f) => (f.id === flowId ? { ...f, status: newStatus } : f)),
+    );
+
+    try {
+      const res = await fetch("/api/whatsapp/flow/status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ formId: flowId, status: newStatus }),
+      });
+      if (!res.ok) throw new Error("Failed to update status");
+      toast.success(`Flow ${newStatus === "active" ? "enabled" : "disabled"}!`);
+      router.refresh();
+    } catch {
+      toast.error("Failed to update status");
+      setFlows(
+        flows.map((f) =>
+          f.id === flowId ? { ...f, status: currentStatus } : f,
+        ),
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const initiateDeleteFlow = (flowId: string) => {
+    setActiveDropdown(null);
+    setFlowToDelete(flowId);
+  };
+
+  const confirmDeleteFlow = async () => {
+    if (!flowToDelete) return;
+    setIsProcessing(true);
+
+    try {
+      const res = await fetch(`/api/whatsapp/flow?formId=${flowToDelete}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete flow");
+      toast.success("Flow deleted successfully");
+      const updatedFlows = flows.filter((f) => f.id !== flowToDelete);
+      setFlows(updatedFlows);
+      if (activeFlowId === flowToDelete) {
+        setActiveFlowId(updatedFlows.length > 0 ? updatedFlows[0].id : null);
+      }
+      router.refresh();
+    } catch {
+      toast.error("Failed to delete flow");
+    } finally {
+      setIsProcessing(false);
+      setFlowToDelete(null);
+    }
+  };
+
+  const handleShareFlow = () => {
+    if (!activeFlow || activeFlow.status !== "active") {
+      toast.error("You can only share active flows.");
+      return;
+    }
+    const cleanPhone = activeFlow.phone.replace(/\D/g, "");
+    const shareLink = `https://wa.me/${cleanPhone || "15550192834"}?text=Hi`;
+    navigator.clipboard.writeText(shareLink);
+    toast.success("WhatsApp link copied to clipboard!");
+    setActiveDropdown(null);
+  };
+
+  const handleSendMessage = async () => {
+    if (
+      !chatInput.trim() ||
+      !activeFlow ||
+      simStep === -1 ||
+      activeFlow.status !== "active"
+    )
+      return;
+
+    const userText = chatInput;
+    setChatInput("");
+
+    setChatMessages((prev) => [...prev, { sender: "user", text: userText }]);
+    setIsBotTyping(true);
+
+    try {
+      const res = await fetch("/api/whatsapp/simulate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          formId: activeFlow.id,
+          currentStep: simStep,
+          collectedData: simData,
+          incomingText: userText,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Simulation failed");
+      const data = await res.json();
+
+      setTimeout(() => {
+        setIsBotTyping(false);
+        setChatMessages((prev) => [
+          ...prev,
+          { sender: "bot", text: data.reply },
+        ]);
+        setSimStep(data.nextStep);
+        setSimData(data.collectedData);
+      }, 800);
+    } catch {
+      setIsBotTyping(false);
+      toast.error("Simulator encountered an error");
+    }
+  };
+
+  return (
+    <>
+      <div className="max-w-6xl mx-auto p-8 md:p-10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl font-mono tracking-tight text-white">
+                WhatsApp Flows
+              </h1>
+              <span className="text-[10px] uppercase tracking-wider bg-neutral-800 border border-neutral-700 text-neutral-400 px-1.5 py-0.5 rounded-sm">
+                Pro
+              </span>
+            </div>
+            <p className="text-neutral-400 text-sm">
+              Convert your headless forms into automated WhatsApp conversational
+              bots.
+            </p>
+          </div>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 bg-white text-black font-medium text-sm rounded-md hover:bg-neutral-200 transition-colors flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+          >
+            <Plus size={16} />
+            <span>New Flow</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          {/* Left Column */}
+          <div className="lg:col-span-1 space-y-4">
+            <div className="flex items-center justify-between mb-4 relative z-20">
+              <h2 className="text-sm font-medium text-neutral-300">
+                Your Flows
+              </h2>
+              <div className="relative" ref={filterRef}>
+                <button
+                  onClick={() => setIsFilterOpen(!isFilterOpen)}
+                  className={cn(
+                    "text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer",
+                    isFilterOpen && "text-white",
+                  )}
+                >
+                  <Settings2 size={16} />
+                </button>
+
+                {isFilterOpen && (
+                  <div className="absolute right-0 top-6 w-40 bg-[#111] border border-neutral-800 rounded-lg shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+                    {(["all", "active", "draft"] as const).map((status) => (
+                      <button
+                        key={status}
+                        onClick={() => handleFilterSelect(status)}
+                        className="w-full text-left px-4 py-2.5 text-xs text-neutral-300 hover:bg-neutral-800 flex items-center justify-between transition-colors cursor-pointer"
+                      >
+                        <span className="capitalize whitespace-nowrap">
+                          {status} Flows
+                        </span>
+                        {filterStatus === status && (
+                          <CheckCircle2
+                            size={14}
+                            className="text-neutral-500 shrink-0"
+                          />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {filteredFlows.length === 0 ? (
+                <div className="p-6 text-center border border-dashed border-neutral-800 rounded-xl text-neutral-500 text-sm">
+                  No {filterStatus !== "all" ? filterStatus : ""} flows found.
+                </div>
+              ) : (
+                filteredFlows.map((flow) => (
+                  <div
+                    key={flow.id}
+                    onClick={() => setActiveFlowId(flow.id)}
+                    className={cn(
+                      "border rounded-xl p-4 cursor-pointer transition-all duration-200",
+                      activeFlowId === flow.id
+                        ? "bg-neutral-900/60 border-neutral-600 shadow-sm"
+                        : "bg-[#0a0a0a] border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/30",
+                    )}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <MessageSquare
+                          size={16}
+                          className={
+                            flow.status === "active"
+                              ? "text-green-500"
+                              : "text-neutral-500"
+                          }
+                        />
+                        <h3 className="text-neutral-200 font-medium text-sm truncate max-w-35">
+                          {flow.formName}
+                        </h3>
+                      </div>
+                      <span
+                        className={cn(
+                          "w-2 h-2 rounded-full",
+                          flow.status === "active"
+                            ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"
+                            : "bg-neutral-600",
+                        )}
+                      ></span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-neutral-500 font-mono mb-4">
+                      <Smartphone size={12} />
+                      <span>{flow.phone}</span>
+                    </div>
+                    <div className="flex items-center justify-between pt-3 border-t border-neutral-800/60">
+                      <div className="text-xs text-neutral-400">
+                        <span className="text-neutral-300">
+                          {flow.messagesSent}
+                        </span>{" "}
+                        msgs
+                      </div>
+                      <div className="text-xs font-medium uppercase tracking-wider text-neutral-500">
+                        {flow.status}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="mt-6 bg-neutral-900/40 border border-dashed border-neutral-700 rounded-xl p-5 text-center">
+              <div className="w-10 h-10 bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Settings2 size={18} className="text-neutral-400" />
+              </div>
+              <h3 className="text-sm font-medium text-neutral-200 mb-1">
+                WhatsApp Cloud API
+              </h3>
+              <p className="text-xs text-neutral-500 mb-4">
+                Connect your WhatsApp Business account to automate your forms.
+              </p>
+              <button
+                onClick={() => setIsConnectModalOpen(true)}
+                className="w-full py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-medium rounded-md transition-colors cursor-pointer"
+              >
+                Configure API
+              </button>
+            </div>
+          </div>
+
+          {/* Right Column */}
+          <div className="lg:col-span-2" style={{ height: "520px" }}>
+            {activeFlow ? (
+              <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl h-full flex flex-col overflow-hidden">
+                {/* Header Area */}
+                <div className="px-5 py-4 border-b border-neutral-800 bg-neutral-900/40 flex items-center justify-between shrink-0">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center border border-neutral-700">
+                      <MessageSquare size={14} className="text-neutral-300" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-neutral-200">
+                        {activeFlow.formName} Bot
+                      </h3>
+                      <p className="text-xs text-neutral-500 flex items-center gap-1">
+                        <CheckCircle2
+                          size={10}
+                          className={
+                            activeFlow.status === "active"
+                              ? "text-green-500"
+                              : "text-neutral-500"
+                          }
+                        />
+                        {activeFlow.status === "active" ? "Online" : "Offline"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() =>
+                        handleToggleStatus(activeFlow.id, activeFlow.status)
+                      }
+                      disabled={isProcessing}
+                      className="text-xs font-medium text-neutral-400 hover:text-neutral-200 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-neutral-900 border border-neutral-800 cursor-pointer disabled:opacity-50"
+                    >
+                      {isProcessing && !flowToDelete ? (
+                        <Loader2 size={12} className="animate-spin" />
+                      ) : (
+                        <Power
+                          size={12}
+                          className={
+                            activeFlow.status === "active"
+                              ? "text-red-400"
+                              : "text-green-400"
+                          }
+                        />
+                      )}
+                      {activeFlow.status === "active"
+                        ? "Disable Flow"
+                        : "Enable Flow"}
+                    </button>
+
+                    <div className="relative" ref={dropdownRef}>
+                      <button
+                        onClick={() =>
+                          setActiveDropdown(
+                            activeDropdown === activeFlow.id
+                              ? null
+                              : activeFlow.id,
+                          )
+                        }
+                        className="text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer p-1 rounded hover:bg-neutral-800"
+                      >
+                        <MoreVertical size={16} />
+                      </button>
+
+                      {activeDropdown === activeFlow.id && (
+                        <div className="absolute right-0 mt-2 w-40 bg-[#111] border border-neutral-800 rounded-lg shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+                          <button
+                            onClick={handleShareFlow}
+                            className="w-full text-left px-3 py-2 text-xs text-neutral-300 hover:bg-neutral-800 flex items-center gap-2 transition-colors cursor-pointer"
+                          >
+                            <Share2 size={14} /> Share Flow Link
+                          </button>
+                          <div className="h-px bg-neutral-800 my-1 w-full"></div>
+                          <button
+                            onClick={() => initiateDeleteFlow(activeFlow.id)}
+                            className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 flex items-center gap-2 transition-colors cursor-pointer"
+                          >
+                            <Trash2 size={14} /> Delete Flow
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* SCROLLABLE CHAT AREA */}
+                <div
+                  ref={chatScrollRef}
+                  className="flex-1 min-h-0 overflow-y-auto p-5 bg-[#0a0a0a] relative [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                >
+                  <div
+                    className="absolute inset-0 opacity-[0.02] pointer-events-none"
+                    style={{
+                      backgroundImage:
+                        "radial-gradient(#ffffff 1px, transparent 1px)",
+                      backgroundSize: "20px 20px",
+                    }}
+                  ></div>
+                  <div className="flex flex-col gap-4 relative z-10 max-w-lg mx-auto pb-4">
+                    <div className="text-center mb-4">
+                      <span className="text-[10px] font-medium uppercase tracking-wider bg-neutral-900 border border-neutral-800 text-neutral-500 px-2 py-1 rounded-full">
+                        Simulator Sandbox
+                      </span>
+                    </div>
+
+                    {chatMessages.map((msg, idx) => (
+                      <div
+                        key={idx}
+                        className={cn(
+                          "flex w-full animate-in fade-in slide-in-from-bottom-2",
+                          msg.sender === "user"
+                            ? "justify-end"
+                            : "justify-start",
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "max-w-[80%] px-4 py-2.5 rounded-2xl text-sm shadow-sm whitespace-pre-wrap",
+                            msg.sender === "user"
+                              ? "bg-neutral-200 text-black rounded-tr-sm"
+                              : "bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-tl-sm",
+                          )}
+                        >
+                          {msg.text}
+                        </div>
+                      </div>
+                    ))}
+
+                    {isBotTyping && (
+                      <div className="flex w-full justify-start mt-2">
+                        <div className="bg-neutral-800 border border-neutral-700 px-4 py-3 rounded-2xl rounded-tl-sm flex gap-1 items-center h-11">
+                          <div
+                            className="w-1.5 h-1.5 bg-neutral-500 rounded-full animate-bounce"
+                            style={{ animationDelay: "0ms" }}
+                          ></div>
+                          <div
+                            className="w-1.5 h-1.5 bg-neutral-500 rounded-full animate-bounce"
+                            style={{ animationDelay: "150ms" }}
+                          ></div>
+                          <div
+                            className="w-1.5 h-1.5 bg-neutral-500 rounded-full animate-bounce"
+                            style={{ animationDelay: "300ms" }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Input Area */}
+                <div className="p-4 border-t border-neutral-800 bg-[#0a0a0a] shrink-0 relative z-20">
+                  <div className="w-full max-w-lg mx-auto bg-neutral-900 border border-neutral-800 rounded-full px-4 py-2.5 flex items-center justify-between focus-within:border-neutral-600 transition-colors">
+                    <input
+                      type="text"
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" && handleSendMessage()
+                      }
+                      disabled={
+                        simStep === -1 || activeFlow.status !== "active"
+                      }
+                      placeholder={
+                        activeFlow.status !== "active"
+                          ? "Flow is offline. Enable to test."
+                          : simStep === -1
+                            ? "Simulation completed"
+                            : "User replies here..."
+                      }
+                      className="flex-1 bg-transparent text-sm text-neutral-200 placeholder:text-neutral-500 focus:outline-none disabled:cursor-not-allowed min-w-0 mr-3"
+                    />
+                    <button
+                      onClick={handleSendMessage}
+                      disabled={
+                        !chatInput.trim() ||
+                        simStep === -1 ||
+                        activeFlow.status !== "active"
+                      }
+                      className="w-6 h-6 flex items-center justify-center shrink-0 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      <SendHorizontal
+                        size={14}
+                        className="text-neutral-400 hover:text-white transition-colors"
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-[#0a0a0a] border border-neutral-800 border-dashed rounded-xl h-full flex flex-col items-center justify-center text-neutral-500">
+                <MessageSquare size={32} className="mb-4 opacity-50" />
+                <p>Select a flow to view details</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <NewWhatsAppFlowModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        availableForms={availableForms}
+      />
+      <ConnectWhatsAppModal
+        isOpen={isConnectModalOpen}
+        onClose={() => setIsConnectModalOpen(false)}
+      />
+
+      {/* Custom Delete Confirmation Modal */}
+      {flowToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col p-6">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-500/10 mb-4 mx-auto">
+              <AlertTriangle size={24} className="text-red-500" />
+            </div>
+            <h3 className="text-lg font-medium text-white text-center mb-2">
+              Delete WhatsApp Flow
+            </h3>
+            <p className="text-sm text-neutral-400 text-center mb-6">
+              Are you sure you want to delete this flow? This won&apos;t delete
+              your form data, but the automated bot will stop responding.
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setFlowToDelete(null)}
+                disabled={isProcessing}
+                className="flex-1 px-4 py-2 bg-transparent text-white border border-neutral-800 rounded-md text-sm hover:bg-neutral-900 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteFlow}
+                disabled={isProcessing}
+                className="flex-1 px-4 py-2 bg-red-500/10 text-red-500 border border-red-500/20 rounded-md text-sm hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isProcessing ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  "Delete Flow"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

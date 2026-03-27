@@ -1,16 +1,61 @@
 "use client";
 
-import { X, MessageSquare, Smartphone } from "lucide-react";
+import { useState } from "react";
+import { X, MessageSquare, Smartphone, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+
+type AvailableForm = {
+  id: string;
+  name: string;
+};
 
 interface NewWhatsAppFlowModalProps {
   isOpen: boolean;
   onClose: () => void;
+  availableForms: AvailableForm[];
 }
 
 export default function NewWhatsAppFlowModal({
   isOpen,
   onClose,
+  availableForms = [],
 }: NewWhatsAppFlowModalProps) {
+  const router = useRouter();
+  const [selectedFormId, setSelectedFormId] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleCreateFlow = async () => {
+    if (!selectedFormId) {
+      toast.error("Please select a form first.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await fetch("/api/whatsapp/flow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ formId: selectedFormId }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || "Failed to create flow");
+
+      toast.success("WhatsApp flow connected successfully!");
+      router.refresh();
+      onClose();
+      setSelectedFormId("");
+    } catch (error: unknown) {
+      const errMsg =
+        error instanceof Error ? error.message : "An error occurred";
+      toast.error(errMsg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -19,7 +64,6 @@ export default function NewWhatsAppFlowModal({
         className="w-full max-w-md bg-[#0a0a0a] border border-neutral-800 rounded-xl shadow-2xl overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-800">
           <div className="flex items-center gap-2 text-neutral-200 font-medium">
             <MessageSquare size={18} className="text-neutral-400" />
@@ -27,27 +71,32 @@ export default function NewWhatsAppFlowModal({
           </div>
           <button
             onClick={onClose}
-            className="text-neutral-500 hover:text-neutral-300 transition-colors"
+            className="text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer"
           >
             <X size={20} />
           </button>
         </div>
 
-        {/* Body */}
         <div className="p-5 space-y-5">
           <div>
             <label className="block text-xs font-medium text-neutral-400 mb-1.5">
               Select Form
             </label>
             <select
-              defaultValue=""
+              value={selectedFormId}
+              onChange={(e) => setSelectedFormId(e.target.value)}
               className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-neutral-200 focus:outline-none focus:ring-1 focus:ring-neutral-600 appearance-none cursor-pointer"
             >
               <option value="" disabled>
-                Choose a form...
+                {availableForms.length === 0
+                  ? "No eligible forms available..."
+                  : "Choose a form..."}
               </option>
-              <option value="startup-waitlist">Startup Waitlist</option>
-              <option value="customer-feedback">Customer Feedback 2026</option>
+              {availableForms.map((form) => (
+                <option key={form.id} value={form.id}>
+                  {form.name}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -59,22 +108,23 @@ export default function NewWhatsAppFlowModal({
               <Smartphone size={16} className="text-neutral-500" />
               <span>+1 (555) 019-2834 (Default)</span>
             </div>
-            <p className="text-[10px] text-neutral-500 mt-2">
-              You can connect a custom business number from the WhatsApp
-              settings.
-            </p>
           </div>
         </div>
 
-        {/* Footer */}
         <div className="px-5 py-4 border-t border-neutral-800 bg-neutral-900/20 flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-neutral-400 hover:text-neutral-200 transition-colors"
+            disabled={isSubmitting}
+            className="px-4 py-2 text-sm text-neutral-400 hover:text-neutral-200 transition-colors disabled:opacity-50 cursor-pointer"
           >
             Cancel
           </button>
-          <button className="px-4 py-2 bg-white text-black font-medium text-sm rounded-md hover:bg-neutral-200 transition-colors">
+          <button
+            onClick={handleCreateFlow}
+            disabled={isSubmitting || !selectedFormId}
+            className="px-4 py-2 bg-white text-black font-medium text-sm rounded-md hover:bg-neutral-200 transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+          >
+            {isSubmitting && <Loader2 size={14} className="animate-spin" />}
             Create Flow
           </button>
         </div>
