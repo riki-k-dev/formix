@@ -111,6 +111,7 @@ export const whatsappConfigs = pgTable("whatsapp_configs", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   phoneNumberId: text("phone_number_id").notNull(),
+  phoneNumber: text("phone_number"),
   accessToken: text("access_token").notNull(),
   verifyToken: text("verify_token").notNull(),
   activeFormId: text("active_form_id").references(() => forms.id),

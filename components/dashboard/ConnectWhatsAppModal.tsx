@@ -1,34 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, QrCode, Loader2, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
+type MetaConfig = {
+  webhookUrl: string;
+  verifyToken: string;
+};
+
 interface ConnectWhatsAppModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialMetaConfig: MetaConfig | null;
 }
 
 export default function ConnectWhatsAppModal({
   isOpen,
   onClose,
+  initialMetaConfig,
 }: ConnectWhatsAppModalProps) {
   const router = useRouter();
   const [phoneNumberId, setPhoneNumberId] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [accessToken, setAccessToken] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [metaDetails, setMetaDetails] = useState<{
-    webhookUrl: string;
-    verifyToken: string;
-  } | null>(null);
+  const [metaDetails, setMetaDetails] = useState<MetaConfig | null>(
+    initialMetaConfig,
+  );
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialMetaConfig) {
+      setMetaDetails(initialMetaConfig);
+    }
+  }, [initialMetaConfig]);
 
   if (!isOpen) return null;
 
   const handleConnect = async () => {
-    if (!phoneNumberId || !accessToken) {
-      toast.error("Please fill in both fields.");
+    if (!phoneNumberId || !accessToken || !phoneNumber) {
+      toast.error("Please fill in all the fields.");
       return;
     }
 
@@ -37,7 +50,7 @@ export default function ConnectWhatsAppModal({
       const res = await fetch("/api/whatsapp/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phoneNumberId, accessToken }),
+        body: JSON.stringify({ phoneNumberId, accessToken, phoneNumber }),
       });
 
       const data = await res.json();
@@ -76,7 +89,7 @@ export default function ConnectWhatsAppModal({
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-800">
           <div className="flex items-center gap-2 text-neutral-200 font-medium">
             <QrCode size={18} className="text-neutral-400" />
-            Connect Meta Cloud API
+            Connect WhatsApp Cloud API
           </div>
           <button
             onClick={onClose}
@@ -97,7 +110,20 @@ export default function ConnectWhatsAppModal({
                   type="text"
                   value={phoneNumberId}
                   onChange={(e) => setPhoneNumberId(e.target.value)}
-                  placeholder="e.g. 102345678901234"
+                  placeholder="e.g. 1050782748118516"
+                  className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-neutral-200 focus:outline-none focus:ring-1 focus:ring-neutral-600 transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-neutral-400 mb-1.5">
+                  WhatsApp Phone Number
+                </label>
+                <input
+                  type="text"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="e.g. 15551544229 (Numbers only)"
                   className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-neutral-200 focus:outline-none focus:ring-1 focus:ring-neutral-600 transition-all"
                 />
               </div>
@@ -118,8 +144,8 @@ export default function ConnectWhatsAppModal({
           ) : (
             <div className="space-y-4 animate-in fade-in">
               <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-sm text-green-400">
-                Credentials saved! Now configure your Webhook in the Meta
-                Dashboard using these details:
+                Credentials saved! Configure your Webhook in the Meta Dashboard
+                using these details:
               </div>
 
               <div>
@@ -163,6 +189,15 @@ export default function ConnectWhatsAppModal({
                   </button>
                 </div>
               </div>
+
+              <div className="pt-2">
+                <button
+                  onClick={() => setMetaDetails(null)}
+                  className="text-xs text-neutral-400 underline hover:text-neutral-200 transition-colors"
+                >
+                  Update Configuration
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -186,7 +221,9 @@ export default function ConnectWhatsAppModal({
               </button>
               <button
                 onClick={handleConnect}
-                disabled={isSubmitting || !phoneNumberId || !accessToken}
+                disabled={
+                  isSubmitting || !phoneNumberId || !accessToken || !phoneNumber
+                }
                 className="px-4 py-2 bg-white text-black font-medium text-sm rounded-md hover:bg-neutral-200 transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer"
               >
                 {isSubmitting && <Loader2 size={14} className="animate-spin" />}

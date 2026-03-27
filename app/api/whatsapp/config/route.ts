@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { phoneNumberId, accessToken } = body;
+    const { phoneNumberId, accessToken, phoneNumber } = body;
 
     if (!phoneNumberId || !accessToken) {
       return NextResponse.json(
@@ -39,6 +39,7 @@ export async function POST(req: Request) {
         .set({
           phoneNumberId,
           accessToken,
+          phoneNumber,
           updatedAt: new Date(),
         })
         .where(eq(whatsappConfigs.id, config.id));
@@ -47,6 +48,7 @@ export async function POST(req: Request) {
         userId: session.user.id,
         phoneNumberId,
         accessToken,
+        phoneNumber,
         verifyToken,
       });
     }

@@ -26,6 +26,14 @@ export default async function WhatsAppFlowsPage() {
     where: eq(whatsappConfigs.userId, session.user.id),
   });
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://yourdomain.com";
+  const initialMetaConfig = config
+    ? {
+        webhookUrl: `${appUrl}/api/whatsapp/webhook`,
+        verifyToken: config.verifyToken,
+      }
+    : null;
+
   const waEnabledForms = userForms.filter((f) => f.hasWhatsapp);
   const availableForms = userForms.filter((f) => !f.hasWhatsapp);
 
@@ -65,7 +73,7 @@ export default async function WhatsAppFlowsPage() {
       } else {
         previewChat.push({
           sender: "bot",
-          text: "✅ Thank you! Your response has been securely recorded.",
+          text: "Thank you for your response! ✨",
         });
       }
     } else {
@@ -78,7 +86,7 @@ export default async function WhatsAppFlowsPage() {
     return {
       id: form.id,
       formName: form.name,
-      phone: config ? "+1 (555) 019-2834 (Default)" : "Unassigned",
+      phone: config?.phoneNumber ? `+${config.phoneNumber}` : "Unassigned",
       status: form.status,
       messagesSent,
       previewChat,
@@ -89,6 +97,7 @@ export default async function WhatsAppFlowsPage() {
     <WhatsAppFlowsClient
       initialFlows={flows}
       availableForms={availableForms.map((f) => ({ id: f.id, name: f.name }))}
+      initialMetaConfig={initialMetaConfig}
     />
   );
 }

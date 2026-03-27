@@ -40,12 +40,19 @@ type AvailableForm = {
   name: string;
 };
 
+type MetaConfig = {
+  webhookUrl: string;
+  verifyToken: string;
+};
+
 export default function WhatsAppFlowsClient({
   initialFlows,
   availableForms,
+  initialMetaConfig,
 }: {
   initialFlows: Flow[];
   availableForms: AvailableForm[];
+  initialMetaConfig: MetaConfig | null;
 }) {
   const router = useRouter();
   const [flows, setFlows] = useState<Flow[]>(initialFlows);
@@ -201,10 +208,15 @@ export default function WhatsAppFlowsClient({
       toast.error("You can only share active flows.");
       return;
     }
+
     const cleanPhone = activeFlow.phone.replace(/\D/g, "");
-    const shareLink = `https://wa.me/${cleanPhone || "15550192834"}?text=Hi`;
+    const phoneToUse = cleanPhone || "15550192834";
+
+    const message = `Hi! I want to fill out: ${activeFlow.formName} [ref:${activeFlow.id}]`;
+    const shareLink = `https://wa.me/${phoneToUse}?text=${encodeURIComponent(message)}`;
+
     navigator.clipboard.writeText(shareLink);
-    toast.success("WhatsApp link copied to clipboard!");
+    toast.success("Flow link copied! Includes automatic routing.");
     setActiveDropdown(null);
   };
 
@@ -610,6 +622,7 @@ export default function WhatsAppFlowsClient({
       <ConnectWhatsAppModal
         isOpen={isConnectModalOpen}
         onClose={() => setIsConnectModalOpen(false)}
+        initialMetaConfig={initialMetaConfig}
       />
 
       {/* Custom Delete Confirmation Modal */}
