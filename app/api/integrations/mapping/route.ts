@@ -4,6 +4,8 @@ import { db } from "@/db";
 import { formIntegrations, userIntegrations, forms } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { headers } from "next/headers";
+import { encryptConfig } from "@/lib/encryption";
+import { validateWebhookUrl } from "@/lib/validators";
 
 export async function PATCH(req: Request) {
   try {
@@ -20,9 +22,16 @@ export async function PATCH(req: Request) {
       );
 
     const validMapping = await db
-      .select({ id: formIntegrations.id })
+      .select({
+        id: formIntegrations.id,
+        provider: userIntegrations.provider,
+      })
       .from(formIntegrations)
       .innerJoin(forms, eq(formIntegrations.formId, forms.id))
+      .innerJoin(
+        userIntegrations,
+        eq(formIntegrations.integrationId, userIntegrations.id),
+      )
       .where(
         and(
           eq(formIntegrations.id, mappingId),
@@ -34,13 +43,28 @@ export async function PATCH(req: Request) {
     if (validMapping.length === 0)
       return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+    const provider = validMapping[0].provider;
+
+    if (
+      ["slack", "discord", "zapier"].includes(provider) &&
+      newConfig.webhookUrl
+    ) {
+      const validation = validateWebhookUrl(provider, newConfig.webhookUrl);
+      if (!validation.isValid) {
+        return NextResponse.json({ error: validation.error }, { status: 400 });
+      }
+    }
+
+    const encryptedConfig = encryptConfig(JSON.stringify(newConfig));
+
     await db
       .update(formIntegrations)
-      .set({ config: JSON.stringify(newConfig), updatedAt: new Date() })
+      .set({ config: encryptedConfig, updatedAt: new Date() })
       .where(eq(formIntegrations.id, mappingId));
 
     return NextResponse.json({ success: true, message: "Mapping updated" });
-  } catch {
+  } catch (error) {
+    console.error("Mapping PATCH Error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

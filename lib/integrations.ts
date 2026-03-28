@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { formIntegrations, userIntegrations, forms } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { decryptConfig } from "./encryption"; // NEW
 
 export async function triggerIntegrations(
   formRecord: typeof forms.$inferSelect,
@@ -11,7 +12,6 @@ export async function triggerIntegrations(
   try {
     const promises: Promise<unknown>[] = [];
 
-    // 1. LEGACY BASIC WEBHOOK
     if (formRecord.hasWebhook && formRecord.webhookUrl) {
       const basicWebhookPromise = fetch(formRecord.webhookUrl, {
         method: "POST",
@@ -29,11 +29,9 @@ export async function triggerIntegrations(
           data: submissionData,
         }),
       }).catch((err) => console.error(`[Basic Webhook Failed]:`, err));
-
       promises.push(basicWebhookPromise);
     }
 
-    // 2. ADVANCED INTEGRATIONS
     const activeIntegrations = await db
       .select({
         provider: userIntegrations.provider,
@@ -56,21 +54,19 @@ export async function triggerIntegrations(
 
     activeIntegrations.forEach((integration) => {
       try {
-        const creds = JSON.parse(integration.credentials);
-        const config = JSON.parse(integration.config);
+        const creds = JSON.parse(decryptConfig(integration.credentials));
+        const config = JSON.parse(decryptConfig(integration.config));
 
-        // A. SLACK INTEGRATION
+        // A. SLACK
         if (
           integration.provider === "slack" &&
           integration.type === "slack_channel_message"
         ) {
-          const webhookUrl = creds.webhookUrl;
+          const webhookUrl = creds.webhookUrl || config.webhookUrl;
           if (!webhookUrl) return;
-
           const dataFields = Object.entries(submissionData)
             .map(([key, value]) => `*${key}:*\n${String(value)}`)
             .join("\n\n");
-
           const slackPayload = {
             blocks: [
               {
@@ -99,24 +95,21 @@ export async function triggerIntegrations(
               },
             ],
           };
-
           const slackPromise = fetch(webhookUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(slackPayload),
           }).catch((err) => console.error(`[Slack Dispatch Failed]:`, err));
-
           promises.push(slackPromise);
         }
 
-        // B. DISCORD INTEGRATION
+        // B. DISCORD
         if (
           integration.provider === "discord" &&
           integration.type === "discord_channel_message"
         ) {
-          const webhookUrl = creds.webhookUrl;
+          const webhookUrl = creds.webhookUrl || config.webhookUrl;
           if (!webhookUrl) return;
-
           const fields = Object.entries(submissionData).map(
             ([name, value]) => ({
               name: name.substring(0, 256),
@@ -124,7 +117,6 @@ export async function triggerIntegrations(
               inline: true,
             }),
           );
-
           const discordPayload = {
             embeds: [
               {
@@ -136,17 +128,15 @@ export async function triggerIntegrations(
               },
             ],
           };
-
           const discordPromise = fetch(webhookUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(discordPayload),
           }).catch((err) => console.error(`[Discord Dispatch Failed]:`, err));
-
           promises.push(discordPromise);
         }
 
-        // C. GOOGLE SHEETS INTEGRATION
+        // C. GOOGLE SHEETS
         if (
           integration.provider === "google_sheets" &&
           integration.type === "sheet_row_add"
@@ -154,14 +144,11 @@ export async function triggerIntegrations(
           const accessToken = creds.accessToken;
           const spreadsheetId = config.spreadsheetId;
           const sheetName = config.sheetName || "Sheet1";
-
           if (!accessToken || !spreadsheetId) return;
-
           const rowValues = Object.values(submissionData).map((val) =>
             String(val),
           );
           rowValues.unshift(new Date().toISOString(), submissionId);
-
           const sheetsPromise = fetch(
             `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${sheetName}!A1:append?valueInputOption=USER_ENTERED`,
             {
@@ -175,18 +162,16 @@ export async function triggerIntegrations(
           ).catch((err) =>
             console.error(`[Google Sheets Dispatch Failed]:`, err),
           );
-
           promises.push(sheetsPromise);
         }
 
-        // D. ZAPIER INTEGRATION
+        // D. ZAPIER
         if (
           integration.provider === "zapier" ||
           integration.provider === "webhook"
         ) {
-          const webhookUrl = creds.webhookUrl;
+          const webhookUrl = creds.webhookUrl || config.webhookUrl;
           if (!webhookUrl) return;
-
           const zapierPromise = fetch(webhookUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -199,20 +184,17 @@ export async function triggerIntegrations(
               ...submissionData,
             }),
           }).catch((err) => console.error(`[Zapier Dispatch Failed]:`, err));
-
           promises.push(zapierPromise);
         }
 
-        // E. NOTION INTEGRATION
+        // E. NOTION
         if (
           integration.provider === "notion" &&
           integration.type === "notion_database_add"
         ) {
           const accessToken = creds.accessToken;
           const databaseId = config.databaseId;
-
           if (!accessToken || !databaseId) return;
-
           const childrenBlocks = Object.entries(submissionData).map(
             ([key, value]) => ({
               object: "block",
@@ -221,18 +203,14 @@ export async function triggerIntegrations(
                 rich_text: [
                   {
                     type: "text",
-                    text: { content: `${key}: `, link: null },
+                    text: { content: `${key}: ` },
                     annotations: { bold: true },
                   },
-                  {
-                    type: "text",
-                    text: { content: String(value), link: null },
-                  },
+                  { type: "text", text: { content: String(value) } },
                 ],
               },
             }),
           );
-
           const notionPayload = {
             parent: { database_id: databaseId },
             properties: {
@@ -248,7 +226,6 @@ export async function triggerIntegrations(
             },
             children: childrenBlocks,
           };
-
           const notionPromise = fetch("https://api.notion.com/v1/pages", {
             method: "POST",
             headers: {
@@ -258,11 +235,10 @@ export async function triggerIntegrations(
             },
             body: JSON.stringify(notionPayload),
           }).catch((err) => console.error(`[Notion Dispatch Failed]:`, err));
-
           promises.push(notionPromise);
         }
 
-        // F. AIRTABLE INTEGRATION
+        // F. AIRTABLE
         if (
           integration.provider === "airtable" &&
           integration.type === "airtable_record_add"
@@ -270,17 +246,8 @@ export async function triggerIntegrations(
           const personalAccessToken = creds.accessToken;
           const baseId = config.baseId;
           const tableIdOrName = config.tableId;
-
           if (!personalAccessToken || !baseId || !tableIdOrName) return;
-
-          const airtablePayload = {
-            records: [
-              {
-                fields: submissionData,
-              },
-            ],
-          };
-
+          const airtablePayload = { records: [{ fields: submissionData }] };
           const airtablePromise = fetch(
             `https://api.airtable.com/v0/${baseId}/${tableIdOrName}`,
             {
@@ -292,7 +259,6 @@ export async function triggerIntegrations(
               body: JSON.stringify(airtablePayload),
             },
           ).catch((err) => console.error(`[Airtable Dispatch Failed]:`, err));
-
           promises.push(airtablePromise);
         }
       } catch (err) {
@@ -304,9 +270,6 @@ export async function triggerIntegrations(
     });
 
     await Promise.allSettled(promises);
-    console.log(
-      `[Dispatcher] Successfully triggered ${promises.length} advanced events for ${formRecord.id}`,
-    );
   } catch (error) {
     console.error("[Dispatcher Core Error]:", error);
   }

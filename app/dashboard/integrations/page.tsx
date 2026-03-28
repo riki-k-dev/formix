@@ -5,6 +5,7 @@ import { eq, desc, and } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import IntegrationsClient from "./integrations-client";
+import { decryptConfig } from "@/lib/encryption";
 
 export type MappingType = {
   id: string;
@@ -56,10 +57,19 @@ export default async function IntegrationsPage() {
   > = {};
 
   detailedConnections.forEach((conn) => {
+    let decryptedCreds = "{}";
+    let decryptedConfig = "{}";
+    try {
+      decryptedCreds = decryptConfig(conn.credentials);
+      decryptedConfig = decryptConfig(conn.mappingConfig);
+    } catch (e) {
+      console.error("Failed to decrypt config for", conn.provider);
+    }
+
     if (!connectionsByProvider[conn.provider]) {
       connectionsByProvider[conn.provider] = {
         integrationId: conn.integrationId,
-        credentials: conn.credentials,
+        credentials: decryptedCreds,
         mappings: [],
       };
     }
@@ -67,7 +77,7 @@ export default async function IntegrationsPage() {
       id: conn.mappingId,
       formId: conn.formId,
       formName: conn.formName,
-      config: conn.mappingConfig,
+      config: decryptedConfig,
       isActive: conn.mappingActive,
     });
   });
