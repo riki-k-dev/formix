@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { forms, submissions, apiKeys } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import crypto from "crypto";
+import { triggerIntegrations } from "@/lib/integrations";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -93,23 +94,7 @@ export async function POST(
       .set({ submissionsCount: sql`${forms.submissionsCount} + 1` })
       .where(eq(forms.id, formRecord.id));
 
-    if (formRecord.hasWebhook && formRecord.webhookUrl) {
-      fetch(formRecord.webhookUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "User-Agent": "Formix-Webhook-Engine/1.0",
-        },
-        body: JSON.stringify({
-          event: "form.submitted",
-          formId: formRecord.id,
-          formName: formRecord.name,
-          submissionId: submissionId,
-          timestamp: new Date().toISOString(),
-          data: submissionData,
-        }),
-      }).catch((err) => console.error(`Webhook Delivery Failed:`, err));
-    }
+    await triggerIntegrations(formRecord, submissionId, submissionData, "api");
 
     return NextResponse.json(
       { success: true, message: "Submission successful", submissionId },

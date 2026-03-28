@@ -8,6 +8,7 @@ import {
   activities,
 } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
+import { triggerIntegrations } from "@/lib/integrations";
 
 async function sendWhatsAppMessage(
   to: string,
@@ -45,7 +46,6 @@ async function sendWhatsAppMessage(
       return false;
     }
 
-    console.log(`[WhatsApp API Success] Message sent to ${to}`);
     return true;
   } catch (error) {
     console.error("[WhatsApp API Fetch Error]:", error);
@@ -53,7 +53,6 @@ async function sendWhatsAppMessage(
   }
 }
 
-// 1. GET: Webhook Verification (Security)
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -76,7 +75,6 @@ export async function GET(req: Request) {
   }
 }
 
-// 2. POST: Receive Incoming Messages
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -109,8 +107,6 @@ export async function POST(req: Request) {
             });
 
             if (!activeSession) {
-              // --- NEW USER: START FLOW ---
-
               let selectedFormId = null;
               const refMatch =
                 msgBody.match(/\[ref:(frm_[a-zA-Z0-9]+)\]/i) ||
@@ -120,7 +116,6 @@ export async function POST(req: Request) {
                 selectedFormId = refMatch[1];
               }
 
-              // Get all active forms for this business
               const activeForms = await db.query.forms.findMany({
                 where: and(
                   eq(forms.userId, config.userId),
@@ -185,28 +180,24 @@ export async function POST(req: Request) {
                 phoneNumberId,
               );
             } else {
-              // --- RETURNING USER: CONTINUE FLOW ---
-              const form = await db.query.forms.findFirst({
+              const formRecord = await db.query.forms.findFirst({
                 where: eq(forms.id, activeSession.formId),
               });
 
-              if (!form) continue;
-              const schema = JSON.parse(form.schema || "{}");
+              if (!formRecord) continue;
+              const schema = JSON.parse(formRecord.schema || "{}");
               const fields = schema.fields || [];
               const currentStep = activeSession.currentStep;
 
               if (currentStep < fields.length) {
                 const currentField = fields[currentStep];
-
                 const existingData = activeSession.collectedData
                   ? JSON.parse(activeSession.collectedData)
                   : {};
-
                 const updatedData = {
                   ...existingData,
                   [currentField.name]: msgBody,
                 };
-
                 const nextStep = currentStep + 1;
 
                 if (nextStep < fields.length) {
@@ -236,14 +227,15 @@ export async function POST(req: Request) {
 
                   await sendWhatsAppMessage(
                     fromNumber,
-                    "✅ Thank you for your response! ✨",
+                    "✅ Thank you! Your response has been securely recorded.",
                     config.accessToken,
                     phoneNumberId,
                   );
 
                   try {
+                    const submissionId = crypto.randomUUID();
                     await db.insert(submissions).values({
-                      id: crypto.randomUUID(),
+                      id: submissionId,
                       formId: activeSession.formId,
                       data: JSON.stringify(updatedData),
                     });
@@ -251,42 +243,30 @@ export async function POST(req: Request) {
                     await db
                       .update(forms)
                       .set({
-                        submissionsCount: (form.submissionsCount || 0) + 1,
+                        submissionsCount:
+                          (formRecord.submissionsCount || 0) + 1,
                       })
-                      .where(eq(forms.id, form.id));
+                      .where(eq(forms.id, formRecord.id));
 
                     await db.insert(activities).values({
-                      userId: form.userId,
+                      userId: formRecord.userId,
                       title: "New WhatsApp Submission",
-                      message: `A new response was received via WhatsApp for ${form.name}.`,
+                      message: `A new response was received via WhatsApp for ${formRecord.name}.`,
                       type: "success",
                     });
 
-                    if (form.hasWebhook && form.webhookUrl) {
-                      await fetch(form.webhookUrl, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          formId: form.id,
-                          formName: form.name,
-                          source: "whatsapp",
-                          customerPhone: fromNumber,
-                          data: updatedData,
-                        }),
-                      });
-                      console.log(
-                        `[Webhook Fired] Sent data to ${form.webhookUrl}`,
-                      );
-                    }
+                    await triggerIntegrations(
+                      formRecord,
+                      submissionId,
+                      updatedData,
+                      "whatsapp",
+                    );
 
                     console.log(
                       "🎉 FORM COMPLETED! Saved to DB & Triggered Integrations.",
                     );
-                  } catch (integrationError) {
-                    console.error(
-                      "Failed to trigger integrations/save:",
-                      integrationError,
-                    );
+                  } catch (err) {
+                    console.error("Failed to trigger integrations/save:", err);
                   }
                 }
               }

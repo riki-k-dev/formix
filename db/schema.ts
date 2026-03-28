@@ -134,3 +134,34 @@ export const whatsappSessions = pgTable("whatsapp_sessions", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const userIntegrations = pgTable("user_integrations", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull(),
+  credentials: text("credentials").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const formIntegrations = pgTable("form_integrations", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  formId: text("form_id")
+    .notNull()
+    .references(() => forms.id, { onDelete: "cascade" }),
+  integrationId: text("integration_id")
+    .notNull()
+    .references(() => userIntegrations.id, { onDelete: "cascade" }),
+  type: text("type").notNull(),
+  config: text("config").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
