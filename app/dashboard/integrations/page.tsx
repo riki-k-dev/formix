@@ -62,7 +62,7 @@ export default async function IntegrationsPage() {
     try {
       decryptedCreds = decryptConfig(conn.credentials);
       decryptedConfig = decryptConfig(conn.mappingConfig);
-    } catch (e) {
+    } catch {
       console.error("Failed to decrypt config for", conn.provider);
     }
 

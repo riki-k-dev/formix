@@ -14,6 +14,7 @@ import {
   Edit2,
   Trash2,
   Loader2,
+  AlertTriangle,
 } from "lucide-react";
 import GenerateFormModal from "@/components/dashboard/GenerateFormModal";
 import Link from "next/link";
@@ -44,7 +45,12 @@ export default function FormsClient({
   const [statusFilter, setStatusFilter] = useState("All Status");
 
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const [formToDelete, setFormToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const filteredForms = formsList.filter((form) => {
     const matchesSearch =
@@ -66,33 +72,36 @@ export default function FormsClient({
     setActiveDropdown(null);
   };
 
-  const handleDelete = async (formId: string, formName: string) => {
-    if (
-      !confirm(
-        `Are you sure you want to delete "${formName}"? This will delete all its data.`,
-      )
-    ) {
-      setActiveDropdown(null);
-      return;
-    }
+  const confirmDelete = (formId: string, formName: string) => {
+    setFormToDelete({ id: formId, name: formName });
+    setActiveDropdown(null);
+  };
 
-    setDeletingId(formId);
+  const executeDelete = async () => {
+    if (!formToDelete) return;
+    setIsDeleting(true);
+
     try {
-      const res = await fetch(`/api/forms/delete?formId=${formId}`, {
+      const res = await fetch(`/api/forms/delete?formId=${formToDelete.id}`, {
         method: "DELETE",
       });
 
-      if (!res.ok) throw new Error("Failed to delete form");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to delete form");
+      }
 
-      setFormsList(formsList.filter((f) => f.id !== formId));
+      setFormsList(formsList.filter((f) => f.id !== formToDelete.id));
       toast.success("Form deleted successfully");
       router.refresh();
     } catch (error) {
       console.error(error);
-      toast.error("Failed to delete form");
+      toast.error(
+        "Failed to delete form. Make sure to delete its submissions first.",
+      );
     } finally {
-      setDeletingId(null);
-      setActiveDropdown(null);
+      setIsDeleting(false);
+      setFormToDelete(null);
     }
   };
 
@@ -112,7 +121,7 @@ export default function FormsClient({
 
           <button
             onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 bg-white text-black font-medium text-sm rounded-md hover:bg-neutral-200 transition-colors flex items-center justify-center gap-2 shrink-0"
+            className="px-4 py-2 bg-white text-black font-medium text-sm rounded-md hover:bg-neutral-200 transition-colors flex items-center justify-center gap-2 shrink-0 cursor-pointer"
           >
             <Plus size={16} />
             <span>New Form</span>
@@ -177,7 +186,7 @@ export default function FormsClient({
                         activeDropdown === form.id ? null : form.id,
                       )
                     }
-                    className="text-neutral-500 hover:text-neutral-300 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-neutral-800"
+                    className="text-neutral-500 hover:text-neutral-300 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-neutral-800 cursor-pointer"
                   >
                     <MoreHorizontal size={18} />
                   </button>
@@ -192,7 +201,7 @@ export default function FormsClient({
                       <div className="absolute right-0 mt-1 w-40 bg-[#111] border border-neutral-800 rounded-lg shadow-xl py-1 z-20 animate-in fade-in zoom-in-95 duration-100">
                         <button
                           onClick={() => handleCopyLink(form.id)}
-                          className="w-full text-left px-3 py-2 text-xs text-neutral-300 hover:bg-neutral-800 flex items-center gap-2 transition-colors"
+                          className="w-full text-left px-3 py-2 text-xs text-neutral-300 hover:bg-neutral-800 flex items-center gap-2 transition-colors cursor-pointer"
                         >
                           <Copy size={14} /> Copy Public Link
                         </button>
@@ -207,16 +216,10 @@ export default function FormsClient({
                         <div className="h-px bg-neutral-800 my-1 w-full"></div>
 
                         <button
-                          onClick={() => handleDelete(form.id, form.name)}
-                          disabled={deletingId === form.id}
-                          className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 flex items-center gap-2 transition-colors disabled:opacity-50"
+                          onClick={() => confirmDelete(form.id, form.name)}
+                          className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 flex items-center gap-2 transition-colors cursor-pointer"
                         >
-                          {deletingId === form.id ? (
-                            <Loader2 size={14} className="animate-spin" />
-                          ) : (
-                            <Trash2 size={14} />
-                          )}
-                          Delete Form
+                          <Trash2 size={14} /> Delete Form
                         </button>
                       </div>
                     </>
@@ -269,7 +272,7 @@ export default function FormsClient({
           {/* Create New Card */}
           <button
             onClick={() => setIsModalOpen(true)}
-            className="group bg-transparent border border-dashed border-neutral-800 hover:border-neutral-600 hover:bg-neutral-900/20 rounded-xl p-5 transition-all flex flex-col items-center justify-center text-center h-full min-h-[180px] gap-3"
+            className="group bg-transparent border border-dashed border-neutral-800 hover:border-neutral-600 hover:bg-neutral-900/20 rounded-xl p-5 transition-all flex flex-col items-center justify-center text-center h-full min-h-[180px] gap-3 cursor-pointer"
           >
             <div className="w-10 h-10 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center text-neutral-400 group-hover:text-white group-hover:bg-neutral-800 transition-colors">
               <Plus size={20} />
@@ -290,6 +293,48 @@ export default function FormsClient({
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
       />
+
+      {/* CUSTOM DELETE CONFIRMATION MODAL */}
+      {formToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col p-6">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-500/10 mb-4 mx-auto">
+              <AlertTriangle size={24} className="text-red-500" />
+            </div>
+            <h3 className="text-lg font-medium text-white text-center mb-2">
+              Delete Form
+            </h3>
+            <p className="text-sm text-neutral-400 text-center mb-6">
+              Are you sure you want to delete{" "}
+              <span className="text-white font-medium">
+                &quot;{formToDelete.name}&quot;
+              </span>
+              ? This action cannot be undone and will permanently delete its
+              schema and data.
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setFormToDelete(null)}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 bg-transparent text-white border border-neutral-800 rounded-md text-sm hover:bg-neutral-900 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeDelete}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 bg-red-500/10 text-red-500 border border-red-500/20 rounded-md text-sm hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  "Delete Form"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
