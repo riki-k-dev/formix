@@ -12,19 +12,17 @@ import {
   Trash2,
   Loader2,
   Share2,
-  SendHorizontal,
-  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import NewWhatsAppFlowModal from "@/components/dashboard/NewWhatsAppFlowModal";
-import ConnectWhatsAppModal from "@/components/dashboard/ConnectWhatsAppModal";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
-type PreviewMessage = {
-  sender: "user" | "bot" | string;
-  text: string;
-};
+import NewWhatsAppFlowModal from "@/components/dashboard/whatsapp/NewWhatsAppFlowModal";
+import ConnectWhatsAppModal from "@/components/dashboard/whatsapp/ConnectWhatsAppModal";
+import WhatsAppSimulator from "@/components/dashboard/whatsapp/WhatsAppSimulator";
+import ConfirmModal from "@/components/ui/ConfirmModal";
+
+type PreviewMessage = { sender: "user" | "bot" | string; text: string };
 
 type Flow = {
   id: string;
@@ -35,15 +33,8 @@ type Flow = {
   previewChat: PreviewMessage[];
 };
 
-type AvailableForm = {
-  id: string;
-  name: string;
-};
-
-type MetaConfig = {
-  webhookUrl: string;
-  verifyToken: string;
-};
+type AvailableForm = { id: string; name: string };
+type MetaConfig = { webhookUrl: string; verifyToken: string };
 
 export default function WhatsAppFlowsClient({
   initialFlows,
@@ -75,16 +66,9 @@ export default function WhatsAppFlowsClient({
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
   const [isProcessing, setIsProcessing] = useState(false);
-
   const [flowToDelete, setFlowToDelete] = useState<string | null>(null);
-
-  const [chatMessages, setChatMessages] = useState<PreviewMessage[]>([]);
-  const [chatInput, setChatInput] = useState("");
-  const [simStep, setSimStep] = useState(0);
-  const [simData, setSimData] = useState({});
-  const [isBotTyping, setIsBotTyping] = useState(false);
-  const chatScrollRef = useRef<HTMLDivElement>(null);
 
   const activeFlow = flows.find((f) => f.id === activeFlowId) || flows[0];
 
@@ -93,58 +77,33 @@ export default function WhatsAppFlowsClient({
       if (
         filterRef.current &&
         !filterRef.current.contains(event.target as Node)
-      ) {
+      )
         setIsFilterOpen(false);
-      }
-    };
-    if (isFilterOpen)
-      document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isFilterOpen]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
       if (
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node)
-      ) {
+      )
         setActiveDropdown(null);
-      }
     };
-    if (activeDropdown)
-      document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [activeDropdown]);
+  }, []);
 
   const handleFilterSelect = (status: "all" | "active" | "draft") => {
     setFilterStatus(status);
     setIsFilterOpen(false);
-
     const newFilteredList = flows.filter((f) =>
       status === "all" ? true : f.status === status,
     );
-    if (newFilteredList.length > 0) {
-      if (!newFilteredList.find((f) => f.id === activeFlowId)) {
-        setActiveFlowId(newFilteredList[0].id);
-      }
-    } else {
+    if (
+      newFilteredList.length > 0 &&
+      !newFilteredList.find((f) => f.id === activeFlowId)
+    ) {
+      setActiveFlowId(newFilteredList[0].id);
+    } else if (newFilteredList.length === 0) {
       setActiveFlowId(null);
     }
   };
-
-  useEffect(() => {
-    if (activeFlow) {
-      setChatMessages(activeFlow.previewChat.slice(0, 1));
-      setSimStep(0);
-      setSimData({});
-    }
-  }, [activeFlowId, activeFlow]);
-
-  useEffect(() => {
-    if (chatScrollRef.current) {
-      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
-    }
-  }, [chatMessages, isBotTyping]);
 
   const handleToggleStatus = async (flowId: string, currentStatus: string) => {
     setIsProcessing(true);
@@ -174,15 +133,9 @@ export default function WhatsAppFlowsClient({
     }
   };
 
-  const initiateDeleteFlow = (flowId: string) => {
-    setActiveDropdown(null);
-    setFlowToDelete(flowId);
-  };
-
   const confirmDeleteFlow = async () => {
     if (!flowToDelete) return;
     setIsProcessing(true);
-
     try {
       const res = await fetch(`/api/whatsapp/flow?formId=${flowToDelete}`, {
         method: "DELETE",
@@ -191,9 +144,8 @@ export default function WhatsAppFlowsClient({
       toast.success("Flow deleted successfully");
       const updatedFlows = flows.filter((f) => f.id !== flowToDelete);
       setFlows(updatedFlows);
-      if (activeFlowId === flowToDelete) {
+      if (activeFlowId === flowToDelete)
         setActiveFlowId(updatedFlows.length > 0 ? updatedFlows[0].id : null);
-      }
       router.refresh();
     } catch {
       toast.error("Failed to delete flow");
@@ -204,65 +156,15 @@ export default function WhatsAppFlowsClient({
   };
 
   const handleShareFlow = () => {
-    if (!activeFlow || activeFlow.status !== "active") {
-      toast.error("You can only share active flows.");
-      return;
-    }
-
-    const cleanPhone = activeFlow.phone.replace(/\D/g, "");
-    const phoneToUse = cleanPhone || "15550192834";
-
+    if (!activeFlow || activeFlow.status !== "active")
+      return toast.error("You can only share active flows.");
+    const cleanPhone = activeFlow.phone.replace(/\D/g, "") || "15550192834";
     const message = `Hi! I want to fill out: ${activeFlow.formName} [ref:${activeFlow.id}]`;
-    const shareLink = `https://wa.me/${phoneToUse}?text=${encodeURIComponent(message)}`;
-
-    navigator.clipboard.writeText(shareLink);
+    navigator.clipboard.writeText(
+      `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`,
+    );
     toast.success("Flow link copied! Includes automatic routing.");
     setActiveDropdown(null);
-  };
-
-  const handleSendMessage = async () => {
-    if (
-      !chatInput.trim() ||
-      !activeFlow ||
-      simStep === -1 ||
-      activeFlow.status !== "active"
-    )
-      return;
-
-    const userText = chatInput;
-    setChatInput("");
-
-    setChatMessages((prev) => [...prev, { sender: "user", text: userText }]);
-    setIsBotTyping(true);
-
-    try {
-      const res = await fetch("/api/whatsapp/simulate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          formId: activeFlow.id,
-          currentStep: simStep,
-          collectedData: simData,
-          incomingText: userText,
-        }),
-      });
-
-      if (!res.ok) throw new Error("Simulation failed");
-      const data = await res.json();
-
-      setTimeout(() => {
-        setIsBotTyping(false);
-        setChatMessages((prev) => [
-          ...prev,
-          { sender: "bot", text: data.reply },
-        ]);
-        setSimStep(data.nextStep);
-        setSimData(data.collectedData);
-      }, 800);
-    } catch {
-      setIsBotTyping(false);
-      toast.error("Simulator encountered an error");
-    }
   };
 
   return (
@@ -287,13 +189,11 @@ export default function WhatsAppFlowsClient({
             onClick={() => setIsModalOpen(true)}
             className="px-4 py-2 bg-white text-black font-medium text-sm rounded-md hover:bg-neutral-200 transition-colors flex items-center justify-center gap-2 shrink-0 cursor-pointer"
           >
-            <Plus size={16} />
-            <span>New Flow</span>
+            <Plus size={16} /> <span>New Flow</span>
           </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          {/* Left Column */}
           <div className="lg:col-span-1 space-y-4">
             <div className="flex items-center justify-between mb-4 relative z-20">
               <h2 className="text-sm font-medium text-neutral-300">
@@ -309,7 +209,6 @@ export default function WhatsAppFlowsClient({
                 >
                   <Settings2 size={16} />
                 </button>
-
                 {isFilterOpen && (
                   <div className="absolute right-0 top-6 w-40 bg-[#111] border border-neutral-800 rounded-lg shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
                     {(["all", "active", "draft"] as const).map((status) => (
@@ -413,11 +312,9 @@ export default function WhatsAppFlowsClient({
             </div>
           </div>
 
-          {/* Right Column */}
           <div className="lg:col-span-2" style={{ height: "520px" }}>
             {activeFlow ? (
               <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl h-full flex flex-col overflow-hidden">
-                {/* Header Area */}
                 <div className="px-5 py-4 border-b border-neutral-800 bg-neutral-900/40 flex items-center justify-between shrink-0">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center border border-neutral-700">
@@ -465,7 +362,6 @@ export default function WhatsAppFlowsClient({
                         ? "Disable Flow"
                         : "Enable Flow"}
                     </button>
-
                     <div className="relative" ref={dropdownRef}>
                       <button
                         onClick={() =>
@@ -479,7 +375,6 @@ export default function WhatsAppFlowsClient({
                       >
                         <MoreVertical size={16} />
                       </button>
-
                       {activeDropdown === activeFlow.id && (
                         <div className="absolute right-0 mt-2 w-40 bg-[#111] border border-neutral-800 rounded-lg shadow-xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
                           <button
@@ -490,7 +385,10 @@ export default function WhatsAppFlowsClient({
                           </button>
                           <div className="h-px bg-neutral-800 my-1 w-full"></div>
                           <button
-                            onClick={() => initiateDeleteFlow(activeFlow.id)}
+                            onClick={() => {
+                              setActiveDropdown(null);
+                              setFlowToDelete(activeFlow.id);
+                            }}
                             className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 flex items-center gap-2 transition-colors cursor-pointer"
                           >
                             <Trash2 size={14} /> Delete Flow
@@ -501,108 +399,7 @@ export default function WhatsAppFlowsClient({
                   </div>
                 </div>
 
-                {/* SCROLLABLE CHAT AREA */}
-                <div
-                  ref={chatScrollRef}
-                  className="flex-1 min-h-0 overflow-y-auto p-5 bg-[#0a0a0a] relative [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-                >
-                  <div
-                    className="absolute inset-0 opacity-[0.02] pointer-events-none"
-                    style={{
-                      backgroundImage:
-                        "radial-gradient(#ffffff 1px, transparent 1px)",
-                      backgroundSize: "20px 20px",
-                    }}
-                  ></div>
-                  <div className="flex flex-col gap-4 relative z-10 max-w-lg mx-auto pb-4">
-                    <div className="text-center mb-4">
-                      <span className="text-[10px] font-medium uppercase tracking-wider bg-neutral-900 border border-neutral-800 text-neutral-500 px-2 py-1 rounded-full">
-                        Simulator Sandbox
-                      </span>
-                    </div>
-
-                    {chatMessages.map((msg, idx) => (
-                      <div
-                        key={idx}
-                        className={cn(
-                          "flex w-full animate-in fade-in slide-in-from-bottom-2",
-                          msg.sender === "user"
-                            ? "justify-end"
-                            : "justify-start",
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            "max-w-[80%] px-4 py-2.5 rounded-2xl text-sm shadow-sm whitespace-pre-wrap",
-                            msg.sender === "user"
-                              ? "bg-neutral-200 text-black rounded-tr-sm"
-                              : "bg-neutral-800 border border-neutral-700 text-neutral-200 rounded-tl-sm",
-                          )}
-                        >
-                          {msg.text}
-                        </div>
-                      </div>
-                    ))}
-
-                    {isBotTyping && (
-                      <div className="flex w-full justify-start mt-2">
-                        <div className="bg-neutral-800 border border-neutral-700 px-4 py-3 rounded-2xl rounded-tl-sm flex gap-1 items-center h-11">
-                          <div
-                            className="w-1.5 h-1.5 bg-neutral-500 rounded-full animate-bounce"
-                            style={{ animationDelay: "0ms" }}
-                          ></div>
-                          <div
-                            className="w-1.5 h-1.5 bg-neutral-500 rounded-full animate-bounce"
-                            style={{ animationDelay: "150ms" }}
-                          ></div>
-                          <div
-                            className="w-1.5 h-1.5 bg-neutral-500 rounded-full animate-bounce"
-                            style={{ animationDelay: "300ms" }}
-                          ></div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Input Area */}
-                <div className="p-4 border-t border-neutral-800 bg-[#0a0a0a] shrink-0 relative z-20">
-                  <div className="w-full max-w-lg mx-auto bg-neutral-900 border border-neutral-800 rounded-full px-4 py-2.5 flex items-center justify-between focus-within:border-neutral-600 transition-colors">
-                    <input
-                      type="text"
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      onKeyDown={(e) =>
-                        e.key === "Enter" && handleSendMessage()
-                      }
-                      disabled={
-                        simStep === -1 || activeFlow.status !== "active"
-                      }
-                      placeholder={
-                        activeFlow.status !== "active"
-                          ? "Flow is offline. Enable to test."
-                          : simStep === -1
-                            ? "Simulation completed"
-                            : "User replies here..."
-                      }
-                      className="flex-1 bg-transparent text-sm text-neutral-200 placeholder:text-neutral-500 focus:outline-none disabled:cursor-not-allowed min-w-0 mr-3"
-                    />
-                    <button
-                      onClick={handleSendMessage}
-                      disabled={
-                        !chatInput.trim() ||
-                        simStep === -1 ||
-                        activeFlow.status !== "active"
-                      }
-                      className="w-6 h-6 flex items-center justify-center shrink-0 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                    >
-                      <SendHorizontal
-                        size={14}
-                        className="text-neutral-400 hover:text-white transition-colors"
-                      />
-                    </button>
-                  </div>
-                </div>
+                <WhatsAppSimulator activeFlow={activeFlow} />
               </div>
             ) : (
               <div className="bg-[#0a0a0a] border border-neutral-800 border-dashed rounded-xl h-full flex flex-col items-center justify-center text-neutral-500">
@@ -625,43 +422,15 @@ export default function WhatsAppFlowsClient({
         initialMetaConfig={initialMetaConfig}
       />
 
-      {/* Custom Delete Confirmation Modal */}
-      {flowToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col p-6">
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-500/10 mb-4 mx-auto">
-              <AlertTriangle size={24} className="text-red-500" />
-            </div>
-            <h3 className="text-lg font-medium text-white text-center mb-2">
-              Delete WhatsApp Flow
-            </h3>
-            <p className="text-sm text-neutral-400 text-center mb-6">
-              Are you sure you want to delete this flow? This won&apos;t delete
-              your form data, but the automated bot will stop responding.
-            </p>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setFlowToDelete(null)}
-                disabled={isProcessing}
-                className="flex-1 px-4 py-2 bg-transparent text-white border border-neutral-800 rounded-md text-sm hover:bg-neutral-900 transition-colors cursor-pointer disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDeleteFlow}
-                disabled={isProcessing}
-                className="flex-1 px-4 py-2 bg-red-500/10 text-red-500 border border-red-500/20 rounded-md text-sm hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-              >
-                {isProcessing ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  "Delete Flow"
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={!!flowToDelete}
+        title="Delete WhatsApp Flow"
+        description="Are you sure you want to delete this flow? This won't delete your form data, but the automated bot will stop responding."
+        confirmText="Delete Flow"
+        onCancel={() => setFlowToDelete(null)}
+        onConfirm={confirmDeleteFlow}
+        isLoading={isProcessing}
+      />
     </>
   );
 }

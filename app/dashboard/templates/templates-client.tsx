@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, FileText, ArrowRight, Lock, Loader2 } from "lucide-react";
+import { Search, FileText, ArrowRight, Clock, Loader2 } from "lucide-react";
 import { Template } from "@/lib/templates";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -143,7 +143,7 @@ export default function TemplatesClient({
         {/* COMING SOON CARD */}
         <div className="border border-dashed border-neutral-800 hover:border-neutral-600 rounded-xl p-5 flex flex-col justify-center items-center text-center group bg-[#0a0a0a] min-h-[22rem]">
           <div className="w-12 h-12 rounded-lg bg-neutral-900 border border-neutral-800 flex items-center justify-center mb-6 shrink-0 group-hover:scale-105 transition-transform">
-            <Lock className="text-neutral-600" size={20} />
+            <Clock className="text-neutral-600" size={20} />
           </div>
           <h3 className="text-base font-medium text-neutral-400 mb-2 truncate">
             More templates coming soon

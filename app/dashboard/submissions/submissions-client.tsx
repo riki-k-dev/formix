@@ -1,18 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Search,
-  Download,
-  Code,
-  Calendar,
-  Trash2,
-  Loader2,
-  X,
-  AlertTriangle,
-} from "lucide-react";
+import { Search, Download, Code, Calendar, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import ConfirmModal from "@/components/ui/ConfirmModal";
+import JsonViewerModal from "@/components/ui/JsonViewerModal";
 
 type Submission = {
   id: string;
@@ -40,7 +33,6 @@ export default function SubmissionsClient({
     unknown
   > | null>(null);
 
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [submissionToDelete, setSubmissionToDelete] = useState<{
     id: string;
     formId: string;
@@ -61,10 +53,8 @@ export default function SubmissionsClient({
       JSON.stringify(sub.data)
         .toLowerCase()
         .includes(searchQuery.toLowerCase());
-
     const matchesForm =
       formFilter === "All Forms" || sub.formName === formFilter;
-
     return matchesSearch && matchesForm;
   });
 
@@ -79,14 +69,13 @@ export default function SubmissionsClient({
   );
 
   const handleExportCSV = () => {
-    if (filteredSubmissions.length === 0) {
+    if (filteredSubmissions.length === 0)
       return toast.error("No data available to export.");
-    }
 
     const allKeys = new Set<string>();
-    filteredSubmissions.forEach((sub) => {
-      Object.keys(sub.data).forEach((key) => allKeys.add(key));
-    });
+    filteredSubmissions.forEach((sub) =>
+      Object.keys(sub.data).forEach((key) => allKeys.add(key)),
+    );
 
     const headers = ["Date", "Form Name", "Channel", ...Array.from(allKeys)];
     const csvRows = [headers.join(",")];
@@ -97,13 +86,11 @@ export default function SubmissionsClient({
         `"${sub.formName}"`,
         `"${sub.channel}"`,
       ];
-
       Array.from(allKeys).forEach((key) => {
         let val = sub.data[key] || "";
         if (typeof val === "object") val = JSON.stringify(val);
         row.push(`"${String(val).replace(/"/g, '""')}"`);
       });
-
       csvRows.push(row.join(","));
     });
 
@@ -116,18 +103,11 @@ export default function SubmissionsClient({
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
-
     toast.success("CSV exported successfully!");
-  };
-
-  const initiateDelete = (id: string, formId: string) => {
-    setSubmissionToDelete({ id, formId });
-    setIsDeleteModalOpen(true);
   };
 
   const confirmDelete = async () => {
     if (!submissionToDelete) return;
-
     setIsDeleting(true);
     try {
       const res = await fetch(
@@ -147,14 +127,12 @@ export default function SubmissionsClient({
       if (paginatedSubmissions.length === 1 && currentPage > 1) {
         setCurrentPage(currentPage - 1);
       }
-
       router.refresh();
     } catch (error) {
       console.error(error);
       toast.error("Failed to delete submission");
     } finally {
       setIsDeleting(false);
-      setIsDeleteModalOpen(false);
       setSubmissionToDelete(null);
     }
   };
@@ -162,7 +140,6 @@ export default function SubmissionsClient({
   return (
     <>
       <div className="max-w-6xl mx-auto p-8 md:p-10">
-        {/* Header Section */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-mono tracking-tight text-white mb-1">
@@ -172,8 +149,6 @@ export default function SubmissionsClient({
               View, filter, and export incoming data across all your forms.
             </p>
           </div>
-
-          {/* Action Buttons */}
           <div className="flex items-center gap-3">
             <button
               onClick={handleExportCSV}
@@ -185,7 +160,6 @@ export default function SubmissionsClient({
           </div>
         </div>
 
-        {/* Utilities Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
           <div className="flex items-center gap-2 w-full md:w-auto">
             <select
@@ -201,7 +175,6 @@ export default function SubmissionsClient({
             </select>
           </div>
 
-          {/* Search */}
           <div className="relative w-full md:w-80">
             <Search
               size={16}
@@ -217,7 +190,6 @@ export default function SubmissionsClient({
           </div>
         </div>
 
-        {/* Data Table Container */}
         <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm border-collapse">
@@ -275,9 +247,13 @@ export default function SubmissionsClient({
                           >
                             <Code size={16} />
                           </button>
-
                           <button
-                            onClick={() => initiateDelete(sub.id, sub.formId)}
+                            onClick={() =>
+                              setSubmissionToDelete({
+                                id: sub.id,
+                                formId: sub.formId,
+                              })
+                            }
                             className="text-neutral-500 hover:text-red-400 transition-colors cursor-pointer"
                             title="Delete Submission"
                           >
@@ -292,7 +268,6 @@ export default function SubmissionsClient({
             </table>
           </div>
 
-          {/* Pagination/Footer */}
           <div className="px-5 py-4 border-t border-neutral-800 flex items-center justify-between text-xs text-neutral-500">
             <span>
               Page {currentPage} of {Math.max(1, totalPages)} (
@@ -320,81 +295,20 @@ export default function SubmissionsClient({
         </div>
       </div>
 
-      {/* SLEEK RAW JSON MODAL */}
-      {viewJsonData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-800 bg-neutral-900/50">
-              <h3 className="text-sm font-medium text-white flex items-center gap-2">
-                <Code size={16} className="text-neutral-400" />
-                Raw JSON Payload
-              </h3>
-              <button
-                onClick={() => setViewJsonData(null)}
-                className="text-neutral-500 hover:text-white transition-colors cursor-pointer"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <div className="p-4 overflow-y-auto max-h-[60vh] bg-black">
-              <pre className="text-xs font-mono text-green-400 whitespace-pre-wrap break-words">
-                {JSON.stringify(viewJsonData, null, 2)}
-              </pre>
-            </div>
-            <div className="px-4 py-3 border-t border-neutral-800 bg-neutral-900/50 flex justify-end">
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(
-                    JSON.stringify(viewJsonData, null, 2),
-                  );
-                  toast.success("JSON copied to clipboard!");
-                }}
-                className="px-3 py-1.5 bg-white text-black text-xs font-medium rounded hover:bg-neutral-200 transition-colors cursor-pointer"
-              >
-                Copy to Clipboard
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <JsonViewerModal
+        isOpen={!!viewJsonData}
+        data={viewJsonData}
+        onClose={() => setViewJsonData(null)}
+      />
 
-      {/* CUSTOM DELETE CONFIRMATION MODAL */}
-      {isDeleteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col p-6">
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-500/10 mb-4 mx-auto">
-              <AlertTriangle size={24} className="text-red-500" />
-            </div>
-            <h3 className="text-lg font-medium text-white text-center mb-2">
-              Delete Submission
-            </h3>
-            <p className="text-sm text-neutral-400 text-center mb-6">
-              Are you sure you want to delete this response? This action cannot
-              be undone and the data will be permanently lost.
-            </p>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setIsDeleteModalOpen(false)}
-                disabled={isDeleting}
-                className="flex-1 px-4 py-2 bg-transparent text-white border border-neutral-800 rounded-md text-sm hover:bg-neutral-900 transition-colors cursor-pointer disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDelete}
-                disabled={isDeleting}
-                className="flex-1 px-4 py-2 bg-transparent text-white border border-red-500/50 rounded-md text-sm hover:bg-red-500/20 transition-colors cursor-pointer disabled:cursor-not-allowed"
-              >
-                {isDeleting ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  "Delete"
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={!!submissionToDelete}
+        title="Delete Submission"
+        description="Are you sure you want to delete this response? This action cannot be undone and the data will be permanently lost."
+        onCancel={() => setSubmissionToDelete(null)}
+        onConfirm={confirmDelete}
+        isLoading={isDeleting}
+      />
     </>
   );
 }

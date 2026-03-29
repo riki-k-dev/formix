@@ -13,10 +13,9 @@ import {
   Copy,
   Edit2,
   Trash2,
-  Loader2,
-  AlertTriangle,
 } from "lucide-react";
 import GenerateFormModal from "@/components/dashboard/GenerateFormModal";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -43,7 +42,6 @@ export default function FormsClient({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
-
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   const [formToDelete, setFormToDelete] = useState<{
@@ -57,11 +55,9 @@ export default function FormsClient({
       form.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (form.description &&
         form.description.toLowerCase().includes(searchQuery.toLowerCase()));
-
     const matchesStatus =
       statusFilter === "All Status" ||
       form.status.toLowerCase() === statusFilter.toLowerCase();
-
     return matchesSearch && matchesStatus;
   });
 
@@ -69,11 +65,6 @@ export default function FormsClient({
     const url = `${window.location.origin}/to/${formId}`;
     navigator.clipboard.writeText(url);
     toast.success("Public link copied to clipboard!");
-    setActiveDropdown(null);
-  };
-
-  const confirmDelete = (formId: string, formName: string) => {
-    setFormToDelete({ id: formId, name: formName });
     setActiveDropdown(null);
   };
 
@@ -118,7 +109,6 @@ export default function FormsClient({
               Manage your generated form schemas, APIs, and micro-UIs.
             </p>
           </div>
-
           <button
             onClick={() => setIsModalOpen(true)}
             className="px-4 py-2 bg-white text-black font-medium text-sm rounded-md hover:bg-neutral-200 transition-colors flex items-center justify-center gap-2 shrink-0 cursor-pointer"
@@ -163,7 +153,6 @@ export default function FormsClient({
               key={form.id}
               className="group bg-neutral-900/30 border border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/50 rounded-xl p-5 transition-all duration-200 flex flex-col"
             >
-              {/* Card Header */}
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
                   {form.status === "active" ? (
@@ -197,7 +186,6 @@ export default function FormsClient({
                         className="fixed inset-0 z-10"
                         onClick={() => setActiveDropdown(null)}
                       ></div>
-
                       <div className="absolute right-0 mt-1 w-40 bg-[#111] border border-neutral-800 rounded-lg shadow-xl py-1 z-20 animate-in fade-in zoom-in-95 duration-100">
                         <button
                           onClick={() => handleCopyLink(form.id)}
@@ -205,18 +193,18 @@ export default function FormsClient({
                         >
                           <Copy size={14} /> Copy Public Link
                         </button>
-
                         <Link
                           href={`/dashboard/forms/${form.id}`}
                           className="w-full text-left px-3 py-2 text-xs text-neutral-300 hover:bg-neutral-800 flex items-center gap-2 transition-colors"
                         >
                           <Edit2 size={14} /> Edit Schema
                         </Link>
-
                         <div className="h-px bg-neutral-800 my-1 w-full"></div>
-
                         <button
-                          onClick={() => confirmDelete(form.id, form.name)}
+                          onClick={() => {
+                            setFormToDelete({ id: form.id, name: form.name });
+                            setActiveDropdown(null);
+                          }}
                           className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 flex items-center gap-2 transition-colors cursor-pointer"
                         >
                           <Trash2 size={14} /> Delete Form
@@ -238,7 +226,6 @@ export default function FormsClient({
                     <Activity size={14} />
                     <span>{form.submissionsCount.toLocaleString()}</span>
                   </div>
-
                   <div className="flex items-center gap-1.5">
                     {form.hasWhatsapp && (
                       <div
@@ -258,7 +245,6 @@ export default function FormsClient({
                     )}
                   </div>
                 </div>
-
                 <span className="text-[10px] text-neutral-600 font-mono uppercase">
                   {new Date(form.createdAt).toLocaleDateString("en-US", {
                     month: "short",
@@ -294,47 +280,23 @@ export default function FormsClient({
         onClose={() => setIsModalOpen(false)}
       />
 
-      {/* CUSTOM DELETE CONFIRMATION MODAL */}
-      {formToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col p-6">
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-500/10 mb-4 mx-auto">
-              <AlertTriangle size={24} className="text-red-500" />
-            </div>
-            <h3 className="text-lg font-medium text-white text-center mb-2">
-              Delete Form
-            </h3>
-            <p className="text-sm text-neutral-400 text-center mb-6">
-              Are you sure you want to delete{" "}
-              <span className="text-white font-medium">
-                &quot;{formToDelete.name}&quot;
-              </span>
-              ? This action cannot be undone and will permanently delete its
-              schema and data.
-            </p>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setFormToDelete(null)}
-                disabled={isDeleting}
-                className="flex-1 px-4 py-2 bg-transparent text-white border border-neutral-800 rounded-md text-sm hover:bg-neutral-900 transition-colors cursor-pointer disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={executeDelete}
-                disabled={isDeleting}
-                className="flex-1 px-4 py-2 bg-red-500/10 text-red-500 border border-red-500/20 rounded-md text-sm hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-              >
-                {isDeleting ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  "Delete Form"
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={!!formToDelete}
+        title="Delete Form"
+        description={
+          <>
+            Are you sure you want to delete{" "}
+            <span className="text-white font-medium">
+              &quot;{formToDelete?.name}&quot;
+            </span>
+            ? This action cannot be undone.
+          </>
+        }
+        confirmText="Delete Form"
+        onCancel={() => setFormToDelete(null)}
+        onConfirm={executeDelete}
+        isLoading={isDeleting}
+      />
     </>
   );
 }
