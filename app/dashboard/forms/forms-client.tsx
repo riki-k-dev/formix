@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Plus,
   Search,
@@ -49,6 +49,10 @@ export default function FormsClient({
     name: string;
   } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    setFormsList(initialForms);
+  }, [initialForms]);
 
   const filteredForms = formsList.filter((form) => {
     const matchesSearch =

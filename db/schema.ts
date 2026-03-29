@@ -65,6 +65,7 @@ export const forms = pgTable("forms", {
   description: text("description"),
   schema: text("schema").notNull(),
   status: text("status").default("active").notNull(),
+  whatsappStatus: text("whatsappStatus").default("active").notNull(),
   submissionsCount: integer("submissionsCount").default(0).notNull(),
   hasWhatsapp: boolean("hasWhatsapp").default(false).notNull(),
   hasWebhook: boolean("hasWebhook").default(false).notNull(),

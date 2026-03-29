@@ -120,7 +120,7 @@ export async function POST(req: Request) {
                 where: and(
                   eq(forms.userId, config.userId),
                   eq(forms.hasWhatsapp, true),
-                  eq(forms.status, "active"),
+                  eq(forms.whatsappStatus, "active"),
                 ),
                 orderBy: [desc(forms.createdAt)],
               });

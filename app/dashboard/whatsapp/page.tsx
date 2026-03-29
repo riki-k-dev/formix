@@ -87,7 +87,7 @@ export default async function WhatsAppFlowsPage() {
       id: form.id,
       formName: form.name,
       phone: config?.phoneNumber ? `+${config.phoneNumber}` : "Unassigned",
-      status: form.status,
+      status: form.whatsappStatus,
       messagesSent,
       previewChat,
     };

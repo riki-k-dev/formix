@@ -1,5 +1,5 @@
 export type FormField = {
-  id: string;
+  name: string;
   type: "text" | "email" | "textarea" | "select" | "radio" | "url" | "number";
   label: string;
   required: boolean;
@@ -24,21 +24,21 @@ export const FORM_TEMPLATES: Template[] = [
     category: "General",
     fields: [
       {
-        id: "name",
+        name: "name",
         type: "text",
         label: "Full Name",
         required: true,
         placeholder: "John Doe",
       },
       {
-        id: "email",
+        name: "email",
         type: "email",
         label: "Email Address",
         required: true,
         placeholder: "john@example.com",
       },
       {
-        id: "message",
+        name: "message",
         type: "textarea",
         label: "Message",
         required: true,
@@ -53,21 +53,21 @@ export const FORM_TEMPLATES: Template[] = [
     category: "General",
     fields: [
       {
-        id: "firstName",
+        name: "firstName",
         type: "text",
         label: "First Name",
         required: false,
         placeholder: "John",
       },
       {
-        id: "email",
+        name: "email",
         type: "email",
         label: "Email Address",
         required: true,
         placeholder: "you@awesome.com",
       },
       {
-        id: "frequency",
+        name: "frequency",
         type: "radio",
         label: "How often do you want to hear from us?",
         required: true,
@@ -82,21 +82,21 @@ export const FORM_TEMPLATES: Template[] = [
     category: "General",
     fields: [
       {
-        id: "role",
+        name: "role",
         type: "select",
         label: "What is your role?",
         required: true,
         options: ["Founder/CEO", "Developer", "Designer", "Marketer", "Other"],
       },
       {
-        id: "companySize",
+        name: "companySize",
         type: "select",
         label: "Company Size",
         required: true,
         options: ["1-10", "11-50", "51-200", "201+"],
       },
       {
-        id: "primaryGoal",
+        name: "primaryGoal",
         type: "textarea",
         label: "What is your main goal with our product?",
         required: true,
@@ -114,28 +114,28 @@ export const FORM_TEMPLATES: Template[] = [
     category: "HR",
     fields: [
       {
-        id: "firstName",
+        name: "firstName",
         type: "text",
         label: "First Name",
         required: true,
         placeholder: "Jane",
       },
       {
-        id: "lastName",
+        name: "lastName",
         type: "text",
         label: "Last Name",
         required: true,
         placeholder: "Doe",
       },
       {
-        id: "email",
+        name: "email",
         type: "email",
         label: "Email",
         required: true,
         placeholder: "jane@example.com",
       },
       {
-        id: "role",
+        name: "role",
         type: "select",
         label: "Role Applying For",
         required: true,
@@ -147,14 +147,14 @@ export const FORM_TEMPLATES: Template[] = [
         ],
       },
       {
-        id: "portfolioUrl",
+        name: "portfolioUrl",
         type: "url",
         label: "Portfolio / LinkedIn URL",
         required: false,
         placeholder: "https://...",
       },
       {
-        id: "coverLetter",
+        name: "coverLetter",
         type: "textarea",
         label: "Cover Letter",
         required: true,
@@ -169,21 +169,21 @@ export const FORM_TEMPLATES: Template[] = [
     category: "HR",
     fields: [
       {
-        id: "department",
+        name: "department",
         type: "select",
         label: "Department",
         required: true,
         options: ["Engineering", "Sales", "Marketing", "HR", "Operations"],
       },
       {
-        id: "satisfaction",
+        name: "satisfaction",
         type: "radio",
         label: "How satisfied are you with your work environment?",
         required: true,
         options: ["Very Satisfied", "Satisfied", "Neutral", "Dissatisfied"],
       },
       {
-        id: "feedback",
+        name: "feedback",
         type: "textarea",
         label: "Any anonymous feedback for the management?",
         required: false,
@@ -200,21 +200,21 @@ export const FORM_TEMPLATES: Template[] = [
     category: "Support",
     fields: [
       {
-        id: "rating",
+        name: "rating",
         type: "radio",
         label: "How would you rate our service?",
         required: true,
         options: ["Excellent", "Good", "Average", "Poor"],
       },
       {
-        id: "feedback",
+        name: "feedback",
         type: "textarea",
         label: "What can we improve?",
         required: true,
         placeholder: "Share your thoughts...",
       },
       {
-        id: "email",
+        name: "email",
         type: "email",
         label: "Email (Optional)",
         required: false,
@@ -229,14 +229,14 @@ export const FORM_TEMPLATES: Template[] = [
     category: "Support",
     fields: [
       {
-        id: "bugTitle",
+        name: "bugTitle",
         type: "text",
         label: "Issue Title",
         required: true,
         placeholder: "e.g. Login page crashing",
       },
       {
-        id: "severity",
+        name: "severity",
         type: "select",
         label: "Severity",
         required: true,
@@ -248,14 +248,14 @@ export const FORM_TEMPLATES: Template[] = [
         ],
       },
       {
-        id: "stepsToReproduce",
+        name: "stepsToReproduce",
         type: "textarea",
         label: "Steps to Reproduce",
         required: true,
         placeholder: "1. Go to... \n2. Click on...",
       },
       {
-        id: "browser",
+        name: "browser",
         type: "text",
         label: "Browser/OS",
         required: true,
@@ -269,9 +269,14 @@ export const FORM_TEMPLATES: Template[] = [
     description: "Internal or external IT support request form.",
     category: "Support",
     fields: [
-      { id: "requesterName", type: "text", label: "Your Name", required: true },
       {
-        id: "issueCategory",
+        name: "requesterName",
+        type: "text",
+        label: "Your Name",
+        required: true,
+      },
+      {
+        name: "issueCategory",
         type: "select",
         label: "Category",
         required: true,
@@ -283,7 +288,7 @@ export const FORM_TEMPLATES: Template[] = [
         ],
       },
       {
-        id: "description",
+        name: "description",
         type: "textarea",
         label: "Describe the problem",
         required: true,
@@ -299,11 +304,11 @@ export const FORM_TEMPLATES: Template[] = [
       "Register attendees for your upcoming webinar or physical event.",
     category: "Marketing",
     fields: [
-      { id: "fullName", type: "text", label: "Full Name", required: true },
-      { id: "email", type: "email", label: "Work Email", required: true },
-      { id: "company", type: "text", label: "Company Name", required: true },
+      { name: "fullName", type: "text", label: "Full Name", required: true },
+      { name: "email", type: "email", label: "Work Email", required: true },
+      { name: "company", type: "text", label: "Company Name", required: true },
       {
-        id: "dietaryReq",
+        name: "dietaryReq",
         type: "select",
         label: "Dietary Requirements",
         required: false,
@@ -318,14 +323,14 @@ export const FORM_TEMPLATES: Template[] = [
     category: "Marketing",
     fields: [
       {
-        id: "email",
+        name: "email",
         type: "email",
         label: "Email Address",
         required: true,
         placeholder: "Enter your best email",
       },
       {
-        id: "useCase",
+        name: "useCase",
         type: "textarea",
         label: "How do you plan to use our product?",
         required: false,
@@ -339,23 +344,23 @@ export const FORM_TEMPLATES: Template[] = [
     description: "Capture high-quality leads with company and contact details.",
     category: "Marketing",
     fields: [
-      { id: "firstName", type: "text", label: "First Name", required: true },
-      { id: "lastName", type: "text", label: "Last Name", required: true },
-      { id: "workEmail", type: "email", label: "Work Email", required: true },
+      { name: "firstName", type: "text", label: "First Name", required: true },
+      { name: "lastName", type: "text", label: "Last Name", required: true },
+      { name: "workEmail", type: "email", label: "Work Email", required: true },
       {
-        id: "companyName",
+        name: "companyName",
         type: "text",
         label: "Company Name",
         required: true,
       },
       {
-        id: "phoneNumber",
+        name: "phoneNumber",
         type: "text",
         label: "Phone Number",
         required: false,
       },
       {
-        id: "interest",
+        name: "interest",
         type: "select",
         label: "Product of Interest",
         required: true,

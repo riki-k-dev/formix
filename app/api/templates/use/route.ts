@@ -31,9 +31,11 @@ export async function POST(req: Request) {
       );
     }
 
-    const newFormId = crypto.randomUUID();
+    const newFormId = `frm_${crypto.randomUUID().replace(/-/g, "").substring(0, 12)}`;
 
     const formSchema = {
+      name: template.name,
+      description: template.description,
       fields: template.fields,
     };
 
@@ -45,7 +47,7 @@ export async function POST(req: Request) {
         name: template.name,
         description: template.description,
         schema: JSON.stringify(formSchema),
-        status: "draft",
+        status: "active",
       })
       .returning({ id: forms.id });
 

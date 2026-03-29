@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Loader2, Sparkles, Shield, Inbox, Info } from "lucide-react";
+import { Sparkles, Shield, Inbox, Info } from "lucide-react";
 import { toast } from "sonner";
 
 type Activity = {
@@ -12,7 +12,6 @@ type Activity = {
 };
 
 export default function NotificationsTab() {
-  const [isLoadingData, setIsLoadingData] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [marketingEmails, setMarketingEmails] = useState(false);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -26,7 +25,6 @@ export default function NotificationsTab() {
 
   const fetchData = async () => {
     try {
-      setIsLoadingData(true);
       const res = await fetch("/api/user/preferences");
       if (res.ok) {
         const data = await res.json();
@@ -36,21 +34,7 @@ export default function NotificationsTab() {
       }
     } catch (error) {
       console.error("Failed to fetch preferences", error);
-    } finally {
-      setIsLoadingData(false);
     }
-  };
-
-  const handleToggleEmail = async () => {
-    const newValue = !emailNotifications;
-    setEmailNotifications(newValue);
-    await updatePreferences(newValue, marketingEmails);
-  };
-
-  const handleToggleMarketing = async () => {
-    const newValue = !marketingEmails;
-    setMarketingEmails(newValue);
-    await updatePreferences(emailNotifications, newValue);
   };
 
   const updatePreferences = async (emailNotif: boolean, mktgEmail: boolean) => {
@@ -68,6 +52,18 @@ export default function NotificationsTab() {
     } catch {
       toast.error("Failed to update preferences");
     }
+  };
+
+  const handleToggleEmail = async () => {
+    const newValue = !emailNotifications;
+    setEmailNotifications(newValue);
+    await updatePreferences(newValue, marketingEmails);
+  };
+
+  const handleToggleMarketing = async () => {
+    const newValue = !marketingEmails;
+    setMarketingEmails(newValue);
+    await updatePreferences(emailNotifications, newValue);
   };
 
   const handleMarkAsRead = async (id: string) => {
@@ -126,14 +122,6 @@ export default function NotificationsTab() {
         return "bg-blue-500/10";
     }
   };
-
-  if (isLoadingData) {
-    return (
-      <div className="flex items-center justify-center py-20 animate-in fade-in">
-        <Loader2 size={24} className="text-neutral-500 animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">

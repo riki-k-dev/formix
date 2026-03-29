@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { forms, submissions, apiKeys } from "@/db/schema";
+import { forms, submissions, apiKeys, activities } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import crypto from "crypto";
 import { triggerIntegrations } from "@/lib/integrations";
@@ -93,6 +93,13 @@ export async function POST(
       .update(forms)
       .set({ submissionsCount: sql`${forms.submissionsCount} + 1` })
       .where(eq(forms.id, formRecord.id));
+
+    await db.insert(activities).values({
+      userId: formRecord.userId,
+      title: "New Form Submission",
+      message: `A new response was received for ${formRecord.name}.`,
+      type: "success",
+    });
 
     await triggerIntegrations(formRecord, submissionId, submissionData, "api");
 

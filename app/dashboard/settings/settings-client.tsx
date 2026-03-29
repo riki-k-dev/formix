@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { User, Bell, LifeBuoy } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import ProfileTab from "@/components/dashboard/settings/ProfileTab";
@@ -21,11 +21,27 @@ export default function SettingsClient({ user }: { user: SessionUser }) {
   const tabFromUrl = searchParams.get("tab");
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [hasUnread, setHasUnread] = useState(false);
 
   const activeTab =
     tabFromUrl && ["profile", "notifications", "help"].includes(tabFromUrl)
       ? tabFromUrl
       : "profile";
+
+  useEffect(() => {
+    const checkUnread = async () => {
+      try {
+        const res = await fetch("/api/user/unread");
+        if (res.ok) {
+          const data = await res.json();
+          setHasUnread(data.hasUnread);
+        }
+      } catch {}
+    };
+    checkUnread();
+    const interval = setInterval(checkUnread, 15000);
+    return () => clearInterval(interval);
+  }, [activeTab]);
 
   const changeTab = (tab: string) => {
     router.replace(`/dashboard/settings?tab=${tab}`, { scroll: false });
@@ -56,6 +72,7 @@ export default function SettingsClient({ user }: { user: SessionUser }) {
               >
                 <User size={18} /> My Profile
               </button>
+
               <button
                 onClick={() => changeTab("notifications")}
                 className={`flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
@@ -67,7 +84,11 @@ export default function SettingsClient({ user }: { user: SessionUser }) {
                 <div className="flex items-center gap-3">
                   <Bell size={18} /> Notifications
                 </div>
+                {hasUnread && (
+                  <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"></div>
+                )}
               </button>
+
               <button
                 onClick={() => changeTab("help")}
                 className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${

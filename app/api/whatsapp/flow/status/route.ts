@@ -28,7 +28,7 @@ export async function PATCH(req: Request) {
     const updateResult = await db
       .update(forms)
       .set({
-        status: status,
+        whatsappStatus: status,
         updatedAt: new Date(),
       })
       .where(and(eq(forms.id, formId), eq(forms.userId, session.user.id)))

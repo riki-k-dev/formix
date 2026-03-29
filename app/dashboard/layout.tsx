@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "@/components/dashboard/Sidebar";
 import {
   PanelLeftClose,
@@ -25,10 +25,26 @@ export default function DashboardLayout({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [hasUnread, setHasUnread] = useState(false);
   const router = useRouter();
 
   const { data: session } = authClient.useSession();
   const user = session?.user;
+
+  useEffect(() => {
+    const checkUnread = async () => {
+      try {
+        const res = await fetch("/api/user/unread");
+        if (res.ok) {
+          const data = await res.json();
+          setHasUnread(data.hasUnread);
+        }
+      } catch {}
+    };
+    checkUnread();
+    const interval = setInterval(checkUnread, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
@@ -71,26 +87,35 @@ export default function DashboardLayout({
 
           {/* Premium User Profile Dropdown */}
           <div className="relative">
-            {/* Trigger Button - NOW DYNAMIC */}
-            <button
-              onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="w-8 h-8 bg-neutral-800 border border-neutral-700 hover:border-neutral-600 rounded-md flex items-center justify-center transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-neutral-500 overflow-hidden"
-            >
-              {user?.image ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src={user.image}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                />
-              ) : user?.name ? (
-                <span className="text-xs font-bold text-neutral-300 uppercase">
-                  {user.name.charAt(0)}
+            <div className="relative w-8 h-8">
+              <button
+                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                className="w-full h-full bg-neutral-800 border border-neutral-700 hover:border-neutral-600 rounded-md flex items-center justify-center transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-neutral-500 overflow-hidden"
+              >
+                {user?.image ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={user.image}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : user?.name ? (
+                  <span className="text-xs font-bold text-neutral-300 uppercase">
+                    {user.name.charAt(0)}
+                  </span>
+                ) : (
+                  <User size={16} className="text-neutral-300" />
+                )}
+              </button>
+
+              {/* Blue Dot Indicator */}
+              {hasUnread && (
+                <span className="absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 flex h-3 w-3 z-10 pointer-events-none">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500 border border-[#0a0a0a]"></span>
                 </span>
-              ) : (
-                <User size={16} className="text-neutral-300" />
               )}
-            </button>
+            </div>
 
             {/* Dropdown Menu */}
             {isProfileOpen && (
@@ -110,7 +135,6 @@ export default function DashboardLayout({
                     </p>
                   </div>
 
-                  {/* Settings Link */}
                   <div className="px-1.5 py-0.5">
                     <Link
                       href="/dashboard/settings"
@@ -123,7 +147,6 @@ export default function DashboardLayout({
 
                   <div className="h-px bg-neutral-800/80 my-1 mx-3"></div>
 
-                  {/* Sign Out Button */}
                   <div className="px-1.5 pb-1 pt-0.5">
                     <button
                       onClick={handleSignOut}

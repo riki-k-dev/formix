@@ -54,6 +54,10 @@ export default function WhatsAppFlowsClient({
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    setFlows(initialFlows);
+  }, [initialFlows]);
+
   const filteredFlows = flows.filter((f) =>
     filterStatus === "all" ? true : f.status === filterStatus,
   );
