@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { forms } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { headers } from "next/headers";
+import { updateFormValidator } from "@/lib/validators";
 
 export async function POST(req: Request) {
   try {
@@ -16,14 +17,15 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { formId, name, description, schema } = body;
 
-    if (!formId || !schema) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 },
-      );
+    const parsedBody = updateFormValidator.safeParse(body);
+
+    if (!parsedBody.success) {
+      const errorMessage = parsedBody.error.issues[0].message;
+      return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
+
+    const { formId, name, description, schema } = parsedBody.data;
 
     const updateResult = await db
       .update(forms)

@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { forms } from "@/db/schema";
 import { headers } from "next/headers";
+import { generateFormValidator } from "@/lib/validators";
 
 export async function POST(req: Request) {
   try {
@@ -12,8 +13,6 @@ export async function POST(req: Request) {
     if (!process.env.GROQ_API_KEY) {
       throw new Error("GROQ_API_KEY is missing in .env");
     }
-
-    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -28,17 +27,20 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { prompt } = body;
 
-    if (!prompt) {
-      return NextResponse.json(
-        { error: "Prompt is required" },
-        { status: 400 },
-      );
+    const parsedBody = generateFormValidator.safeParse(body);
+
+    if (!parsedBody.success) {
+      const errorMessage = parsedBody.error.issues[0].message;
+      return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
+
+    const { prompt } = parsedBody.data;
 
     console.log("2. Prompt received:", prompt);
     console.log("3. Prompting Groq (Llama-3)...");
+
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
     const systemInstruction = `
       You are an expert form schema architect for a headless form builder called Formix.
