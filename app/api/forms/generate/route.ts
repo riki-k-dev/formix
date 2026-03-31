@@ -15,7 +15,6 @@ export async function POST(req: Request) {
 
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-    // 1. Authenticate the User
     const session = await auth.api.getSession({
       headers: await headers(),
     });
@@ -28,7 +27,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2. Parse the body
     const body = await req.json();
     const { prompt } = body;
 
@@ -63,7 +61,6 @@ export async function POST(req: Request) {
       }
     `;
 
-    // 4. Call Groq API using Llama-3 8B model
     const chatCompletion = await groq.chat.completions.create({
       messages: [
         { role: "system", content: systemInstruction },
@@ -84,10 +81,8 @@ export async function POST(req: Request) {
 
     const parsedSchema = JSON.parse(responseText);
 
-    // 5. Generate a unique ID
     const formId = `frm_${crypto.randomUUID().replace(/-/g, "").substring(0, 12)}`;
 
-    // 6. Save to Neon Database
     console.log("5. Saving to Neon Database...");
     const [newForm] = await db
       .insert(forms)
@@ -96,7 +91,7 @@ export async function POST(req: Request) {
         userId: session.user.id,
         name: parsedSchema.name || "Untitled AI Form",
         description: parsedSchema.description || "",
-        schema: JSON.stringify(parsedSchema),
+        schema: parsedSchema,
         status: "active",
         hasWhatsapp: false,
         hasWebhook: false,

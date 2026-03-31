@@ -7,7 +7,6 @@ import { headers } from "next/headers";
 
 export async function POST(req: Request) {
   try {
-    // 1. Authenticate User
     const session = await auth.api.getSession({
       headers: await headers(),
     });
@@ -16,7 +15,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 2. Get data from frontend
     const body = await req.json();
     const { formId, hasWebhook, webhookUrl } = body;
 
@@ -27,7 +25,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. Security Check: Make sure the form belongs to this user!
     const existingForm = await db.query.forms.findFirst({
       where: and(eq(forms.id, formId), eq(forms.userId, session.user.id)),
     });
@@ -39,7 +36,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // 4. Update the database
     await db
       .update(forms)
       .set({

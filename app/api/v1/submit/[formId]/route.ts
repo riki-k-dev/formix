@@ -86,7 +86,7 @@ export async function POST(
     await db.insert(submissions).values({
       id: submissionId,
       formId: formRecord.id,
-      data: JSON.stringify(submissionData),
+      data: submissionData,
     });
 
     await db

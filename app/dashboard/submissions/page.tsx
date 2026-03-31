@@ -29,12 +29,7 @@ export default async function SubmissionsPage() {
     .orderBy(desc(submissions.createdAt));
 
   const formattedSubmissions = data.map((sub) => {
-    let parsedData = {};
-    try {
-      parsedData = JSON.parse(sub.data);
-    } catch {
-      parsedData = { raw: sub.data };
-    }
+    const parsedData = (sub.data as Record<string, unknown>) || {};
 
     return {
       id: sub.id,

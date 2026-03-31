@@ -7,7 +7,6 @@ import { eq } from "drizzle-orm";
 
 export async function PATCH(req: Request) {
   try {
-    // 1. Check if user is authenticated
     const session = await auth.api.getSession({
       headers: await headers(),
     });
@@ -16,7 +15,6 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 2. Get the new name from the request body
     const body = await req.json();
     const { name } = body;
 
@@ -24,7 +22,6 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
 
-    // 3. Update the user's name in the database
     await db
       .update(user)
       .set({ name: name.trim() })

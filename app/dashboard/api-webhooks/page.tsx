@@ -8,7 +8,6 @@ import ApiWebhooksClient from "./api-webhooks-client";
 import crypto from "crypto";
 
 export default async function ApiWebhooksPage() {
-  // 1. Authenticate user
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -17,7 +16,6 @@ export default async function ApiWebhooksPage() {
     redirect("/login");
   }
 
-  // 2. Fetch all forms for this user
   const userForms = await db
     .select({
       id: forms.id,
@@ -29,7 +27,6 @@ export default async function ApiWebhooksPage() {
     .where(eq(forms.userId, session.user.id))
     .orderBy(desc(forms.createdAt));
 
-  // 3. DYNAMIC API KEY LOGIC
   let userApiKeyRecord = await db.query.apiKeys.findFirst({
     where: eq(apiKeys.userId, session.user.id),
   });
@@ -50,7 +47,6 @@ export default async function ApiWebhooksPage() {
     userApiKeyRecord = insertedKey;
   }
 
-  // 4. Pass real data & real API key to UI
   return (
     <ApiWebhooksClient initialForms={userForms} apiKey={userApiKeyRecord.key} />
   );

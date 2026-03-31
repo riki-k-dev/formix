@@ -7,7 +7,6 @@ import { redirect } from "next/navigation";
 import DashboardClient from "./dashboard-client";
 
 export default async function DashboardOverview() {
-  // 1. Authenticate user
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -16,14 +15,12 @@ export default async function DashboardOverview() {
     redirect("/login");
   }
 
-  // 2. Fetch all forms for this user
   const userForms = await db
     .select()
     .from(forms)
     .where(eq(forms.userId, session.user.id))
     .orderBy(desc(forms.createdAt));
 
-  // 3. Calculate Stats
   const totalForms = userForms.length;
   const activeForms = userForms.filter((f) => f.status === "active").length;
   const totalSubmissions = userForms.reduce(
@@ -31,7 +28,6 @@ export default async function DashboardOverview() {
     0,
   );
 
-  // 4. Fetch the 5 most recent submissions across all forms
   const recentSubmissionsRaw = await db
     .select({
       id: submissions.id,
@@ -44,7 +40,6 @@ export default async function DashboardOverview() {
     .orderBy(desc(submissions.createdAt))
     .limit(5);
 
-  // Format dates securely for the client
   const recentSubmissions = recentSubmissionsRaw.map((sub) => ({
     ...sub,
     createdAt: sub.createdAt.toISOString(),

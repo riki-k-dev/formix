@@ -6,7 +6,6 @@ import { eq, and } from "drizzle-orm";
 import { headers } from "next/headers";
 import crypto from "crypto";
 
-// POST: Create / Link WhatsApp Flow to Form
 export async function POST(req: Request) {
   try {
     const session = await auth.api.getSession({
@@ -75,7 +74,6 @@ export async function POST(req: Request) {
   }
 }
 
-// DELETE: Remove WhatsApp Flow from Form
 export async function DELETE(req: Request) {
   try {
     const session = await auth.api.getSession({
@@ -96,7 +94,6 @@ export async function DELETE(req: Request) {
       );
     }
 
-    // 1. Verify ownership of the form
     const formRecord = await db.query.forms.findFirst({
       where: and(eq(forms.id, formId), eq(forms.userId, session.user.id)),
     });
@@ -108,13 +105,11 @@ export async function DELETE(req: Request) {
       );
     }
 
-    // 2. Remove the 'hasWhatsapp' flag from the form
     await db
       .update(forms)
       .set({ hasWhatsapp: false, updatedAt: new Date() })
       .where(eq(forms.id, formId));
 
-    // 3. Free up the Meta Phone Number (detach form)
     await db
       .update(whatsappConfigs)
       .set({ activeFormId: null, updatedAt: new Date() })
@@ -125,7 +120,6 @@ export async function DELETE(req: Request) {
         ),
       );
 
-    // 4. Clean up any active sessions to prevent ghost conversations
     await db
       .delete(whatsappSessions)
       .where(eq(whatsappSessions.formId, formId));

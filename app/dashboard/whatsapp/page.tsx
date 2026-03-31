@@ -50,12 +50,7 @@ export default async function WhatsAppFlowsPage() {
     const formSessions = allSessions.filter((s) => s.formId === form.id);
     const messagesSent = formSessions.length * 3;
 
-    let schema = { fields: [] as SchemaField[] };
-    try {
-      schema = JSON.parse(form.schema);
-    } catch {
-      console.error("Failed to parse schema for form:", form.id);
-    }
+    const schema = (form.schema as { fields: SchemaField[] }) || { fields: [] };
 
     const previewChat = [];
     if (schema.fields && schema.fields.length > 0) {

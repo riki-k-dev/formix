@@ -7,7 +7,6 @@ import { headers } from "next/headers";
 
 export async function POST(req: Request) {
   try {
-    // 1. Authenticate User
     const session = await auth.api.getSession({
       headers: await headers(),
     });
@@ -16,7 +15,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 2. Get data from frontend
     const body = await req.json();
     const { formId, name, description, schema } = body;
 
@@ -27,13 +25,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. Security Check & Update Database
     const updateResult = await db
       .update(forms)
       .set({
         name: name,
         description: description,
-        schema: JSON.stringify(schema),
+        schema: schema,
       })
       .where(and(eq(forms.id, formId), eq(forms.userId, session.user.id)))
       .returning();

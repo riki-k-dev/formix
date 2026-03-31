@@ -5,6 +5,14 @@ import { forms } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { headers } from "next/headers";
 
+type FormSchema = {
+  fields: Array<{
+    name: string;
+    label: string;
+    type: string;
+  }>;
+};
+
 export async function POST(req: Request) {
   try {
     const session = await auth.api.getSession({
@@ -26,9 +34,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Form not found" }, { status: 404 });
     }
 
-    const schema = JSON.parse(form.schema);
+    const schema = form.schema as FormSchema;
 
-    // Simulate saving the data
     const currentField = schema.fields[currentStep];
     const newCollectedData = { ...collectedData };
 
@@ -38,7 +45,6 @@ export async function POST(req: Request) {
 
     const nextStep = currentStep + 1;
 
-    // Check if form is completed
     if (nextStep >= schema.fields.length) {
       return NextResponse.json({
         reply:
@@ -48,7 +54,6 @@ export async function POST(req: Request) {
       });
     }
 
-    // Return the next question
     const nextField = schema.fields[nextStep];
     return NextResponse.json({
       reply: nextField.label,

@@ -46,7 +46,7 @@ export async function POST(req: Request) {
         userId: session.user.id,
         name: template.name,
         description: template.description,
-        schema: JSON.stringify(formSchema),
+        schema: formSchema,
         status: "active",
       })
       .returning({ id: forms.id });

@@ -10,6 +10,14 @@ import {
 import { eq, and, desc } from "drizzle-orm";
 import { triggerIntegrations } from "@/lib/integrations";
 
+type FormSchema = {
+  fields: Array<{
+    name: string;
+    label: string;
+    type: string;
+  }>;
+};
+
 async function sendWhatsAppMessage(
   to: string,
   text: string,
@@ -159,7 +167,9 @@ export async function POST(req: Request) {
                 continue;
               }
 
-              const schema = JSON.parse(formToStart.schema || "{}");
+              const schema = (formToStart.schema as FormSchema) || {
+                fields: [],
+              };
               if (!schema.fields || schema.fields.length === 0) continue;
 
               await db.insert(whatsappSessions).values({
@@ -167,7 +177,7 @@ export async function POST(req: Request) {
                 userPhoneNumber: fromNumber,
                 businessPhoneNumberId: phoneNumberId,
                 currentStep: 0,
-                collectedData: JSON.stringify({}),
+                collectedData: {},
                 status: "active",
               });
 
@@ -185,15 +195,20 @@ export async function POST(req: Request) {
               });
 
               if (!formRecord) continue;
-              const schema = JSON.parse(formRecord.schema || "{}");
+
+              const schema = (formRecord.schema as FormSchema) || {
+                fields: [],
+              };
               const fields = schema.fields || [];
               const currentStep = activeSession.currentStep;
 
               if (currentStep < fields.length) {
                 const currentField = fields[currentStep];
-                const existingData = activeSession.collectedData
-                  ? JSON.parse(activeSession.collectedData)
-                  : {};
+
+                const existingData =
+                  (activeSession.collectedData as Record<string, unknown>) ||
+                  {};
+
                 const updatedData = {
                   ...existingData,
                   [currentField.name]: msgBody,
@@ -205,7 +220,7 @@ export async function POST(req: Request) {
                     .update(whatsappSessions)
                     .set({
                       currentStep: nextStep,
-                      collectedData: JSON.stringify(updatedData),
+                      collectedData: updatedData,
                     })
                     .where(eq(whatsappSessions.id, activeSession.id));
 
@@ -220,7 +235,7 @@ export async function POST(req: Request) {
                     .update(whatsappSessions)
                     .set({
                       currentStep: nextStep,
-                      collectedData: JSON.stringify(updatedData),
+                      collectedData: updatedData,
                       status: "completed",
                     })
                     .where(eq(whatsappSessions.id, activeSession.id));
@@ -237,7 +252,7 @@ export async function POST(req: Request) {
                     await db.insert(submissions).values({
                       id: submissionId,
                       formId: activeSession.formId,
-                      data: JSON.stringify(updatedData),
+                      data: updatedData,
                     });
 
                     await db

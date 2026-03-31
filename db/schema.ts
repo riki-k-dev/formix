@@ -4,90 +4,117 @@ import {
   timestamp,
   boolean,
   integer,
+  jsonb,
 } from "drizzle-orm/pg-core";
+
+// -----------------------------------------------------------------------------
+// CORE & AUTH TABLES (Better Auth)
+// -----------------------------------------------------------------------------
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
-  emailVerified: boolean("emailVerified").notNull(),
+  emailVerified: boolean("email_verified").notNull(),
   image: text("image"),
-  createdAt: timestamp("createdAt").notNull(),
-  updatedAt: timestamp("updatedAt").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .notNull()
+    .$onUpdate(() => new Date()),
   emailNotifications: boolean("email_notifications").default(true),
   marketingEmails: boolean("marketing_emails").default(false),
 });
 
 export const session = pgTable("session", {
   id: text("id").primaryKey(),
-  expiresAt: timestamp("expiresAt").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
   token: text("token").notNull().unique(),
-  createdAt: timestamp("createdAt").notNull(),
-  updatedAt: timestamp("updatedAt").notNull(),
-  ipAddress: text("ipAddress"),
-  userAgent: text("userAgent"),
-  userId: text("userId")
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
     .notNull()
-    .references(() => user.id),
+    .$onUpdate(() => new Date()),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
 });
 
 export const account = pgTable("account", {
   id: text("id").primaryKey(),
-  accountId: text("accountId").notNull(),
-  providerId: text("providerId").notNull(),
-  userId: text("userId")
+  accountId: text("account_id").notNull(),
+  providerId: text("provider_id").notNull(),
+  userId: text("user_id")
     .notNull()
-    .references(() => user.id),
-  accessToken: text("accessToken"),
-  refreshToken: text("refreshToken"),
-  idToken: text("idToken"),
-  accessTokenExpiresAt: timestamp("accessTokenExpiresAt"),
-  refreshTokenExpiresAt: timestamp("refreshTokenExpiresAt"),
+    .references(() => user.id, { onDelete: "cascade" }),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  idToken: text("id_token"),
+  accessTokenExpiresAt: timestamp("access_token_expires_at"),
+  refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
   scope: text("scope"),
   password: text("password"),
-  createdAt: timestamp("createdAt").notNull(),
-  updatedAt: timestamp("updatedAt").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .notNull()
+    .$onUpdate(() => new Date()),
 });
 
 export const verification = pgTable("verification", {
   id: text("id").primaryKey(),
   identifier: text("identifier").notNull(),
   value: text("value").notNull(),
-  expiresAt: timestamp("expiresAt").notNull(),
-  createdAt: timestamp("createdAt"),
-  updatedAt: timestamp("updatedAt"),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date()),
 });
+
+// -----------------------------------------------------------------------------
+// FORMIX APPLICATION TABLES
+// -----------------------------------------------------------------------------
 
 export const forms = pgTable("forms", {
   id: text("id").primaryKey(),
-  userId: text("userId").notNull(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   description: text("description"),
-  schema: text("schema").notNull(),
+  schema: jsonb("schema").notNull(), // Upgraded to JSONB
   status: text("status").default("active").notNull(),
-  whatsappStatus: text("whatsappStatus").default("active").notNull(),
-  submissionsCount: integer("submissionsCount").default(0).notNull(),
-  hasWhatsapp: boolean("hasWhatsapp").default(false).notNull(),
-  hasWebhook: boolean("hasWebhook").default(false).notNull(),
-  webhookUrl: text("webhookUrl"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  whatsappStatus: text("whatsapp_status").default("active").notNull(),
+  submissionsCount: integer("submissions_count").default(0).notNull(),
+  hasWhatsapp: boolean("has_whatsapp").default(false).notNull(),
+  hasWebhook: boolean("has_webhook").default(false).notNull(),
+  webhookUrl: text("webhook_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .notNull()
+    .$onUpdate(() => new Date()),
 });
 
 export const submissions = pgTable("submissions", {
   id: text("id").primaryKey(),
-  formId: text("formId")
+  formId: text("form_id")
     .notNull()
     .references(() => forms.id, { onDelete: "cascade" }),
-  data: text("data").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  data: jsonb("data").notNull(), // Upgraded to JSONB
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const apiKeys = pgTable("api_keys", {
   id: text("id").primaryKey(),
-  userId: text("userId").notNull(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
   key: text("key").notNull().unique(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const activities = pgTable("activities", {
@@ -115,9 +142,12 @@ export const whatsappConfigs = pgTable("whatsapp_configs", {
   phoneNumber: text("phone_number"),
   accessToken: text("access_token").notNull(),
   verifyToken: text("verify_token").notNull(),
-  activeFormId: text("active_form_id").references(() => forms.id),
+  activeFormId: text("active_form_id").references(() => forms.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .notNull()
+    .$onUpdate(() => new Date()),
 });
 
 export const whatsappSessions = pgTable("whatsapp_sessions", {
@@ -130,10 +160,13 @@ export const whatsappSessions = pgTable("whatsapp_sessions", {
     .notNull()
     .references(() => forms.id, { onDelete: "cascade" }),
   currentStep: integer("current_step").default(0).notNull(),
-  collectedData: text("collected_data").default("{}").notNull(),
+  collectedData: jsonb("collected_data").default({}).notNull(), // Upgraded to JSONB
   status: text("status").default("active").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .notNull()
+    .$onUpdate(() => new Date()),
 });
 
 export const userIntegrations = pgTable("user_integrations", {
@@ -144,10 +177,13 @@ export const userIntegrations = pgTable("user_integrations", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   provider: text("provider").notNull(),
-  credentials: text("credentials").notNull(),
+  credentials: text("credentials").notNull(), // Kept as text due to Encryption
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .notNull()
+    .$onUpdate(() => new Date()),
 });
 
 export const formIntegrations = pgTable("form_integrations", {
@@ -161,8 +197,11 @@ export const formIntegrations = pgTable("form_integrations", {
     .notNull()
     .references(() => userIntegrations.id, { onDelete: "cascade" }),
   type: text("type").notNull(),
-  config: text("config").notNull(),
+  config: text("config").notNull(), // Kept as text due to Encryption
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .notNull()
+    .$onUpdate(() => new Date()),
 });

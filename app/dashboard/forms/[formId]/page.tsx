@@ -6,6 +6,20 @@ import { headers } from "next/headers";
 import { redirect, notFound } from "next/navigation";
 import EditFormClient from "./edit-client";
 
+type FormField = {
+  name: string;
+  label: string;
+  type: string;
+  required: boolean;
+  options?: string[];
+};
+
+type FormSchema = {
+  name: string;
+  description: string;
+  fields: FormField[];
+};
+
 export default async function EditFormPage({
   params,
 }: {
@@ -13,7 +27,6 @@ export default async function EditFormPage({
 }) {
   const { formId } = await params;
 
-  // 1. Authenticate user
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -22,7 +35,6 @@ export default async function EditFormPage({
     redirect("/login");
   }
 
-  // 2. Fetch the specific form
   const formRecord = await db.query.forms.findFirst({
     where: and(eq(forms.id, formId), eq(forms.userId, session.user.id)),
   });
@@ -31,18 +43,7 @@ export default async function EditFormPage({
     notFound();
   }
 
-  // 3. Safely parse the JSON schema
-  let parsedSchema;
-  try {
-    parsedSchema = JSON.parse(formRecord.schema);
-  } catch {
-    parsedSchema = {
-      name: formRecord.name,
-      description: formRecord.description,
-      fields: [],
-    };
-  }
+  const parsedSchema = formRecord.schema as FormSchema;
 
-  // 4. Render the Builder UI
   return <EditFormClient formId={formRecord.id} initialSchema={parsedSchema} />;
 }
