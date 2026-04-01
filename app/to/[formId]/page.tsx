@@ -4,6 +4,27 @@ import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import FormRenderer from "./FormRenderer";
 
+type FormField = {
+  name: string;
+  label: string;
+  type:
+    | "text"
+    | "email"
+    | "number"
+    | "textarea"
+    | "select"
+    | "radio"
+    | "checkbox";
+  required: boolean;
+  options?: string[];
+};
+
+type FormSchema = {
+  name: string;
+  description?: string;
+  fields: FormField[];
+};
+
 export default async function PublicFormPage({
   params,
 }: {
@@ -19,16 +40,14 @@ export default async function PublicFormPage({
     notFound();
   }
 
-  let parsedSchema;
-  try {
-    parsedSchema = JSON.parse(formRecord.schema as string);
-  } catch {
-    parsedSchema = {
-      name: formRecord.name,
-      description: formRecord.description,
-      fields: [],
-    };
-  }
+  const parsedSchema =
+    typeof formRecord.schema === "object" && formRecord.schema !== null
+      ? (formRecord.schema as FormSchema)
+      : {
+          name: formRecord.name,
+          description: formRecord.description ?? undefined,
+          fields: [],
+        };
 
   return (
     <div className="min-h-screen bg-[#050505] flex items-center justify-center p-4 selection:bg-neutral-800 selection:text-white">

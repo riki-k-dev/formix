@@ -7,9 +7,7 @@ import {
   jsonb,
 } from "drizzle-orm/pg-core";
 
-// -----------------------------------------------------------------------------
 // CORE & AUTH TABLES (Better Auth)
-// -----------------------------------------------------------------------------
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -74,9 +72,7 @@ export const verification = pgTable("verification", {
     .$onUpdate(() => new Date()),
 });
 
-// -----------------------------------------------------------------------------
 // FORMIX APPLICATION TABLES
-// -----------------------------------------------------------------------------
 
 export const forms = pgTable("forms", {
   id: text("id").primaryKey(),
@@ -142,7 +138,9 @@ export const whatsappConfigs = pgTable("whatsapp_configs", {
   phoneNumber: text("phone_number"),
   accessToken: text("access_token").notNull(),
   verifyToken: text("verify_token").notNull(),
-  activeFormId: text("active_form_id").references(() => forms.id, { onDelete: "set null" }),
+  activeFormId: text("active_form_id").references(() => forms.id, {
+    onDelete: "set null",
+  }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
@@ -160,7 +158,7 @@ export const whatsappSessions = pgTable("whatsapp_sessions", {
     .notNull()
     .references(() => forms.id, { onDelete: "cascade" }),
   currentStep: integer("current_step").default(0).notNull(),
-  collectedData: jsonb("collected_data").default({}).notNull(), // Upgraded to JSONB
+  collectedData: jsonb("collected_data").default({}).notNull(),
   status: text("status").default("active").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
@@ -177,7 +175,7 @@ export const userIntegrations = pgTable("user_integrations", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   provider: text("provider").notNull(),
-  credentials: text("credentials").notNull(), // Kept as text due to Encryption
+  credentials: text("credentials").notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
@@ -197,7 +195,7 @@ export const formIntegrations = pgTable("form_integrations", {
     .notNull()
     .references(() => userIntegrations.id, { onDelete: "cascade" }),
   type: text("type").notNull(),
-  config: text("config").notNull(), // Kept as text due to Encryption
+  config: text("config").notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")

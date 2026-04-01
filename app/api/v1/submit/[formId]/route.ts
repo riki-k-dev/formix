@@ -4,6 +4,7 @@ import { forms, submissions, apiKeys, activities } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import crypto from "crypto";
 import { triggerIntegrations } from "@/lib/integrations";
+import { submissionRateLimit } from "@/lib/ratelimit";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,6 +21,32 @@ export async function POST(
   { params }: { params: Promise<{ formId: string }> },
 ) {
   try {
+    const ip =
+      req.headers.get("x-forwarded-for") ||
+      req.headers.get("x-real-ip") ||
+      "anonymous_ip";
+    const { success, limit, reset, remaining } =
+      await submissionRateLimit.limit(ip);
+
+    if (!success) {
+      console.warn(`Submission rate limit exceeded for IP: ${ip}`);
+      return NextResponse.json(
+        {
+          error:
+            "Too many submissions. Please wait a moment before trying again.",
+        },
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            "X-RateLimit-Limit": limit.toString(),
+            "X-RateLimit-Remaining": remaining.toString(),
+            "X-RateLimit-Reset": reset.toString(),
+          },
+        },
+      );
+    }
+
     const { formId } = await params;
 
     const formRecord = await db.query.forms.findFirst({
@@ -35,7 +62,6 @@ export async function POST(
 
     const origin =
       req.headers.get("origin") || req.headers.get("referer") || "";
-
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "";
     const isInternalRequest =
       origin.includes("localhost:3000") || (appUrl && origin.includes(appUrl));

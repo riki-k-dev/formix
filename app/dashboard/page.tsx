@@ -1,10 +1,13 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { forms, submissions } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, count } from "drizzle-orm"; // 'count' import kiya
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import DashboardClient from "./dashboard-client";
+
+// 👇 FIX 1: Next.js ko bolo cache na kare 👇
+export const dynamic = "force-dynamic";
 
 export default async function DashboardOverview() {
   const session = await auth.api.getSession({
@@ -15,6 +18,7 @@ export default async function DashboardOverview() {
     redirect("/login");
   }
 
+  // Forms fetch karo
   const userForms = await db
     .select()
     .from(forms)
@@ -23,10 +27,14 @@ export default async function DashboardOverview() {
 
   const totalForms = userForms.length;
   const activeForms = userForms.filter((f) => f.status === "active").length;
-  const totalSubmissions = userForms.reduce(
-    (acc, form) => acc + form.submissionsCount,
-    0,
-  );
+
+  const [submissionsData] = await db
+    .select({ value: count() })
+    .from(submissions)
+    .innerJoin(forms, eq(submissions.formId, forms.id))
+    .where(eq(forms.userId, session.user.id));
+
+  const totalSubmissions = submissionsData.value;
 
   const recentSubmissionsRaw = await db
     .select({

@@ -1,10 +1,12 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { forms, whatsappConfigs, whatsappSessions } from "@/db/schema";
-import { eq, desc, inArray } from "drizzle-orm";
+import { forms, whatsappConfigs, submissions } from "@/db/schema";
+import { eq, desc, inArray, count } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import WhatsAppFlowsClient from "./whatsapp-client";
+
+export const dynamic = "force-dynamic";
 
 type SchemaField = { label: string; name: string; type: string };
 
@@ -38,17 +40,30 @@ export default async function WhatsAppFlowsPage() {
   const availableForms = userForms.filter((f) => !f.hasWhatsapp);
 
   const formIds = waEnabledForms.map((f) => f.id);
-  let allSessions: (typeof whatsappSessions.$inferSelect)[] = [];
+
+  let liveSubmissionsCounts: { formId: string; count: number }[] = [];
 
   if (formIds.length > 0) {
-    allSessions = await db.query.whatsappSessions.findMany({
-      where: inArray(whatsappSessions.formId, formIds),
-    });
+    const counts = await db
+      .select({
+        formId: submissions.formId,
+        value: count(submissions.id),
+      })
+      .from(submissions)
+      .where(inArray(submissions.formId, formIds))
+      .groupBy(submissions.formId);
+
+    liveSubmissionsCounts = counts.map((c) => ({
+      formId: c.formId as string,
+      count: c.value,
+    }));
   }
 
   const flows = waEnabledForms.map((form) => {
-    const formSessions = allSessions.filter((s) => s.formId === form.id);
-    const messagesSent = formSessions.length * 3;
+    const realCountObj = liveSubmissionsCounts.find(
+      (c) => c.formId === form.id,
+    );
+    const messagesSent = realCountObj ? realCountObj.count : 0;
 
     const schema = (form.schema as { fields: SchemaField[] }) || { fields: [] };
 

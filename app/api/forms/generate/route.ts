@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { forms } from "@/db/schema";
 import { headers } from "next/headers";
 import { generateFormValidator } from "@/lib/validators";
+import { aiGenerationRateLimit } from "@/lib/ratelimit";
 
 export async function POST(req: Request) {
   try {
@@ -26,8 +27,26 @@ export async function POST(req: Request) {
       );
     }
 
-    const body = await req.json();
+    // --- RATE LIMITING LOGIC START ---
+    const { success, limit, reset, remaining } = await aiGenerationRateLimit.limit(session.user.id);
+    
+    if (!success) {
+      console.warn(`Rate limit exceeded for user: ${session.user.id}`);
+      return NextResponse.json(
+        { error: "Too many AI generation requests. Please try again in a minute." },
+        { 
+          status: 429,
+          headers: {
+            "X-RateLimit-Limit": limit.toString(),
+            "X-RateLimit-Remaining": remaining.toString(),
+            "X-RateLimit-Reset": reset.toString()
+          }
+        }
+      );
+    }
+    // --- RATE LIMITING LOGIC END ---
 
+    const body = await req.json();
     const parsedBody = generateFormValidator.safeParse(body);
 
     if (!parsedBody.success) {
@@ -82,7 +101,6 @@ export async function POST(req: Request) {
     console.log("4. AI Response received. Parsing JSON...");
 
     const parsedSchema = JSON.parse(responseText);
-
     const formId = `frm_${crypto.randomUUID().replace(/-/g, "").substring(0, 12)}`;
 
     console.log("5. Saving to Neon Database...");

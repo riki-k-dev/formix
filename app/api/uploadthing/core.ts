@@ -25,13 +25,11 @@ export const ourFileRouter = {
     .onUploadComplete(async ({ metadata, file }) => {
       console.log("Upload complete for userId:", metadata.userId);
 
-      // 1. Fetch existing user to check if they already have an avatar
       const currentUser = await db.query.user.findFirst({
         where: eq(user.id, metadata.userId),
         columns: { image: true },
       });
 
-      // 2. If they have an old avatar, delete it from UploadThing bucket
       if (currentUser?.image) {
         const oldFileKey = currentUser.image.split("/f/")[1];
         if (oldFileKey) {
@@ -40,7 +38,6 @@ export const ourFileRouter = {
         }
       }
 
-      // 3. Update the user's avatar URL in database with the new one
       await db
         .update(user)
         .set({ image: file.url })
