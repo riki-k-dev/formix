@@ -4,7 +4,7 @@ import { forms, apiKeys } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import ApiWebhooksClient from "./api-webhooks-client";
+import ApiWebhooksClient from "./webhooks-client";
 import crypto from "crypto";
 
 export default async function ApiWebhooksPage() {

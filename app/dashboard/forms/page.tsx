@@ -1,12 +1,11 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { forms, submissions } from "@/db/schema";
-import { eq, desc, count } from "drizzle-orm"; // 'count' import add kiya
+import { forms, submissions, formIntegrations } from "@/db/schema";
+import { eq, desc, count, inArray, and } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import FormsClient from "./forms-client";
 
-// 👇 FIX 1: Cache disable karo 👇
 export const dynamic = "force-dynamic";
 
 export default async function FormsPage() {
@@ -35,5 +34,27 @@ export default async function FormsPage() {
     .groupBy(forms.id)
     .orderBy(desc(forms.createdAt));
 
-  return <FormsClient initialForms={userForms} />;
+  const formIds = userForms.map((f) => f.id);
+  let integratedFormIds = new Set<string>();
+
+  if (formIds.length > 0) {
+    const activeIntegrations = await db
+      .select({ formId: formIntegrations.formId })
+      .from(formIntegrations)
+      .where(
+        and(
+          inArray(formIntegrations.formId, formIds),
+          eq(formIntegrations.isActive, true),
+        ),
+      );
+
+    integratedFormIds = new Set(activeIntegrations.map((i) => i.formId));
+  }
+
+  const formsWithIntegrations = userForms.map((form) => ({
+    ...form,
+    hasIntegration: integratedFormIds.has(form.id),
+  }));
+
+  return <FormsClient initialForms={formsWithIntegrations} />;
 }

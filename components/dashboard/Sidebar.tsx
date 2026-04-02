@@ -24,7 +24,7 @@ const navLinks = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "My Forms", href: "/dashboard/forms", icon: Files },
   { name: "Submissions", href: "/dashboard/submissions", icon: Inbox },
-  { name: "API & Webhooks", href: "/dashboard/api-webhooks", icon: Webhook },
+  { name: "API & Webhooks", href: "/dashboard/webhooks", icon: Webhook },
   {
     name: "WhatsApp Flows",
     href: "/dashboard/whatsapp",

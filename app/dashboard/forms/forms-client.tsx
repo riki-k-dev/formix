@@ -13,7 +13,11 @@ import {
   Copy,
   Edit2,
   Trash2,
+  Power,
+  Loader2,
+  Blocks,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import GenerateFormModal from "@/components/dashboard/GenerateFormModal";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import Link from "next/link";
@@ -28,6 +32,7 @@ type Form = {
   submissionsCount: number;
   hasWhatsapp: boolean;
   hasWebhook: boolean;
+  hasIntegration?: boolean;
   createdAt: Date;
 };
 
@@ -49,6 +54,7 @@ export default function FormsClient({
     name: string;
   } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isTogglingStatus, setIsTogglingStatus] = useState<string | null>(null);
 
   useEffect(() => {
     setFormsList(initialForms);
@@ -70,6 +76,45 @@ export default function FormsClient({
     navigator.clipboard.writeText(url);
     toast.success("Public link copied to clipboard!");
     setActiveDropdown(null);
+  };
+
+  const handleToggleStatus = async (formId: string, currentStatus: string) => {
+    const newStatus = currentStatus === "active" ? "draft" : "active";
+    setIsTogglingStatus(formId);
+
+    setFormsList(
+      formsList.map((f) => (f.id === formId ? { ...f, status: newStatus } : f)),
+    );
+
+    try {
+      const res = await fetch("/api/forms/status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ formId, status: newStatus }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to update form status");
+      }
+
+      toast.success(
+        `Form is now ${newStatus === "active" ? "Live" : "Deactivated"}`,
+      );
+      router.refresh();
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to change status. Reverting.");
+      // Revert the optimistic update on error
+      setFormsList(
+        formsList.map((f) =>
+          f.id === formId ? { ...f, status: currentStatus } : f,
+        ),
+      );
+    } finally {
+      setIsTogglingStatus(null);
+      setActiveDropdown(null);
+    }
   };
 
   const executeDelete = async () => {
@@ -155,7 +200,7 @@ export default function FormsClient({
           {filteredForms.map((form) => (
             <div
               key={form.id}
-              className="group bg-neutral-900/30 border border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/50 rounded-xl p-5 transition-all duration-200 flex flex-col"
+              className={`group bg-neutral-900/30 border border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/50 rounded-xl p-5 transition-all duration-200 flex flex-col ${form.status === "draft" ? "opacity-70" : ""}`}
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
@@ -190,26 +235,65 @@ export default function FormsClient({
                         className="fixed inset-0 z-10"
                         onClick={() => setActiveDropdown(null)}
                       ></div>
-                      <div className="absolute right-0 mt-1 w-40 bg-[#111] border border-neutral-800 rounded-lg shadow-xl py-1 z-20 animate-in fade-in zoom-in-95 duration-100">
+                      <div className="absolute right-0 mt-1 w-48 bg-[#111] border border-neutral-800 rounded-lg shadow-xl py-1 z-20 animate-in fade-in zoom-in-95 duration-100">
                         <button
                           onClick={() => handleCopyLink(form.id)}
-                          className="w-full text-left px-3 py-2 text-xs text-neutral-300 hover:bg-neutral-800 flex items-center gap-2 transition-colors cursor-pointer"
+                          disabled={form.status !== "active"}
+                          className="w-full text-left px-3 py-2 text-xs text-neutral-300 hover:bg-neutral-800 flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                          title={
+                            form.status !== "active"
+                              ? "Activate form to share"
+                              : ""
+                          }
                         >
                           <Copy size={14} /> Copy Public Link
                         </button>
+
                         <Link
                           href={`/dashboard/forms/${form.id}`}
-                          className="w-full text-left px-3 py-2 text-xs text-neutral-300 hover:bg-neutral-800 flex items-center gap-2 transition-colors"
+                          className="w-full text-left px-3 py-2 text-xs text-neutral-300 hover:bg-neutral-800 flex items-center gap-2 transition-colors whitespace-nowrap"
                         >
                           <Edit2 size={14} /> Edit Schema
                         </Link>
+
                         <div className="h-px bg-neutral-800 my-1 w-full"></div>
+
+                        <button
+                          onClick={() =>
+                            handleToggleStatus(form.id, form.status)
+                          }
+                          disabled={isTogglingStatus === form.id}
+                          className="w-full text-left px-3 py-2 text-xs text-neutral-300 hover:bg-neutral-800 flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {isTogglingStatus === form.id ? (
+                            <Loader2
+                              size={14}
+                              className="animate-spin shrink-0"
+                            />
+                          ) : (
+                            <Power
+                              size={14}
+                              className={cn(
+                                "shrink-0",
+                                form.status === "active"
+                                  ? "text-amber-400"
+                                  : "text-green-400",
+                              )}
+                            />
+                          )}
+                          {form.status === "active"
+                            ? "Deactivate Form"
+                            : "Activate Form"}
+                        </button>
+
+                        <div className="h-px bg-neutral-800 my-1 w-full"></div>
+
                         <button
                           onClick={() => {
                             setFormToDelete({ id: form.id, name: form.name });
                             setActiveDropdown(null);
                           }}
-                          className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 flex items-center gap-2 transition-colors cursor-pointer"
+                          className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap"
                         >
                           <Trash2 size={14} /> Delete Form
                         </button>
@@ -231,20 +315,31 @@ export default function FormsClient({
                     <span>{form.submissionsCount.toLocaleString()}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    {form.hasWhatsapp && (
+                    {/* Integrations Active Icon */}
+                    {form.hasIntegration && (
                       <div
-                        className="w-5 h-5 rounded-full bg-green-500/10 flex items-center justify-center border border-green-500/20"
-                        title="WhatsApp Flow Enabled"
+                        className="w-5 h-5 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20"
+                        title="Integrations Enabled"
                       >
-                        <MessageSquare size={10} className="text-green-500" />
+                        <Blocks size={10} className="text-purple-400" />
                       </div>
                     )}
+                    {/* Webhook Icon */}
                     {form.hasWebhook && (
                       <div
                         className="w-5 h-5 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20"
                         title="Webhooks Enabled"
                       >
                         <Webhook size={10} className="text-blue-400" />
+                      </div>
+                    )}
+                    {/* WhatsApp Icon */}
+                    {form.hasWhatsapp && (
+                      <div
+                        className="w-5 h-5 rounded-full bg-green-500/10 flex items-center justify-center border border-green-500/20"
+                        title="WhatsApp Flow Enabled"
+                      >
+                        <MessageSquare size={10} className="text-green-500" />
                       </div>
                     )}
                   </div>

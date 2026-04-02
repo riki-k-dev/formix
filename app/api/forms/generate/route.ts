@@ -27,24 +27,26 @@ export async function POST(req: Request) {
       );
     }
 
-    // --- RATE LIMITING LOGIC START ---
-    const { success, limit, reset, remaining } = await aiGenerationRateLimit.limit(session.user.id);
-    
+    const { success, limit, reset, remaining } =
+      await aiGenerationRateLimit.limit(session.user.id);
+
     if (!success) {
       console.warn(`Rate limit exceeded for user: ${session.user.id}`);
       return NextResponse.json(
-        { error: "Too many AI generation requests. Please try again in a minute." },
-        { 
+        {
+          error:
+            "Too many AI generation requests. Please try again in a minute.",
+        },
+        {
           status: 429,
           headers: {
             "X-RateLimit-Limit": limit.toString(),
             "X-RateLimit-Remaining": remaining.toString(),
-            "X-RateLimit-Reset": reset.toString()
-          }
-        }
+            "X-RateLimit-Reset": reset.toString(),
+          },
+        },
       );
     }
-    // --- RATE LIMITING LOGIC END ---
 
     const body = await req.json();
     const parsedBody = generateFormValidator.safeParse(body);
