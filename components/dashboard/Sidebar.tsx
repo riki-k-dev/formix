@@ -70,10 +70,10 @@ export default function Sidebar({ isCollapsed }: SidebarProps) {
           <div className="flex items-center whitespace-nowrap w-full">
             <div className="border-zinc-800 border rounded-lg p-1 flex items-center justify-center shrink-0 w-9 h-9">
               <Image
-                src="/i2-t3.png"
+                src="/i2-t4.png"
                 alt="Formix Logo"
-                width={26}
-                height={26}
+                width={24}
+                height={24}
                 className="shrink-0 object-contain rounded-md"
                 priority
               />

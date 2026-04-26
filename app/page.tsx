@@ -1,10 +1,36 @@
+import Navbar from "@/components/landing/Navbar";
+import Grid from "@/components/landing/ui/Grid";
+import Hero from "@/components/landing/Hero";
+import ImageSection from "@/components/landing/ImageSection";
+import Problem from "@/components/landing/Problem";
+import Solution from "@/components/landing/Solution";
+import Features from "@/components/landing/Features";
+import Pricing from "@/components/landing/Pricing";
+import FAQ from "@/components/landing/FAQ";
+import Footer from "@/components/landing/Footer";
+import Separator from "@/components/landing/ui/Separator";
+
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <h1 className="text-4xl font-bold tracking-tight">Formix</h1>
-      <p className="mt-4 text-lg text-muted-foreground">
-        AI-powered headless forms. Generate schemas, APIs, and UIs in seconds.
-      </p>
-    </main>
+    <div className="min-h-screen bg-[#0a0a0a] text-white relative flex flex-col items-center overflow-x-hidden">
+      <Grid />
+      <Navbar />
+      <Hero />
+      <ImageSection />
+      <Problem />
+      <Solution />
+      <Features />
+      <Pricing />
+      <FAQ />
+
+      <div className="w-full flex flex-col items-center relative z-10">
+        <div className="w-full max-w-300">
+          <Separator />
+        </div>
+        <div className="w-full h-px bg-neutral-700/30"></div>
+      </div>
+
+      <Footer />
+    </div>
   );
 }
