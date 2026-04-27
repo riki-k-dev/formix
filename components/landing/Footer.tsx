@@ -92,10 +92,10 @@ export default function Footer() {
           <div className="p-8 md:p-10 lg:p-12 border-b md:border-r border-neutral-700/30 flex flex-col gap-4">
             <h4 className="text-white font-medium text-sm mb-1">Resources</h4>
             <Link
-              href="#"
+              href="/docs"
               className="text-sm text-neutral-500 hover:text-white transition-colors"
             >
-              Documentation
+              Docs
             </Link>
             <Link
               href="#"

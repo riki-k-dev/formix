@@ -72,8 +72,8 @@ export default function Sidebar({ isCollapsed }: SidebarProps) {
               <Image
                 src="/i2-t4.png"
                 alt="Formix Logo"
-                width={24}
-                height={24}
+                width={26}
+                height={26}
                 className="shrink-0 object-contain rounded-md"
                 priority
               />
