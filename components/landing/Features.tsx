@@ -1,8 +1,17 @@
+"use client";
+
+import { motion } from "framer-motion";
 import { Terminal, MessageSquare } from "lucide-react";
 
 export default function Features() {
   return (
-    <section className="w-full flex flex-col items-center relative z-10 bg-[#0a0a0a]">
+    <motion.section
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.1 }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      className="w-full flex flex-col items-center relative z-10 bg-[#0a0a0a]"
+    >
       <div className="w-full max-w-300 flex flex-col border-x border-neutral-700/30">
         {/* FEATURE 1: HEADLESS API (Text Left, Visual Right) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 border-b border-neutral-700/30">
@@ -50,33 +59,44 @@ export default function Features() {
                   <span className="text-pink-400">const</span> response ={" "}
                   <span className="text-pink-400">await</span> fetch(
                   <span className="text-green-300">
-                    "https://formix.dev/api/v1/submit/frm_123"
+                    &quot;https://formix.dev/api/v1/submit/frm_123&quot;
                   </span>
                   , {"{"}
                 </p>
                 <p className="pl-4">
-                  method: <span className="text-green-300">"POST"</span>,
+                  method:{" "}
+                  <span className="text-green-300">&quot;POST&quot;</span>,
                 </p>
                 <p className="pl-4">headers: {"{"}</p>
                 <p className="pl-8">
-                  <span className="text-blue-300">"Authorization"</span>:{" "}
+                  <span className="text-blue-300">
+                    &quot;Authorization&quot;
+                  </span>
+                  :{" "}
                   <span className="text-green-300">
                     `Bearer ${"{"}API_KEY{"}"}`
                   </span>
                   ,
                 </p>
                 <p className="pl-8">
-                  <span className="text-blue-300">"Content-Type"</span>:{" "}
-                  <span className="text-green-300">"application/json"</span>
+                  <span className="text-blue-300">
+                    &quot;Content-Type&quot;
+                  </span>
+                  :{" "}
+                  <span className="text-green-300">
+                    &quot;application/json&quot;
+                  </span>
                 </p>
                 <p className="pl-4">{"}"},</p>
                 <p className="pl-4">body: JSON.stringify({"{"}</p>
                 <p className="pl-8">data: {"{"}</p>
                 <p className="pl-12">
-                  name: <span className="text-green-300">"John Doe"</span>,
+                  name:{" "}
+                  <span className="text-green-300">&quot;John Doe&quot;</span>,
                 </p>
                 <p className="pl-12">
-                  role: <span className="text-green-300">"Developer"</span>
+                  role:{" "}
+                  <span className="text-green-300">&quot;Developer&quot;</span>
                 </p>
                 <p className="pl-8">{"}"}</p>
                 <p className="pl-4">{"}"})</p>
@@ -88,7 +108,6 @@ export default function Features() {
 
         {/* FEATURE 2: WHATSAPP (Visual Left, Text Right) */}
         <div className="grid grid-cols-1 lg:grid-cols-2">
-          {/* Order changes on mobile so text is always on top, but visual is left on desktop */}
           <div className="p-10 lg:p-16 flex items-center justify-center bg-[#0d0d0d] border-b lg:border-b-0 lg:border-r border-neutral-700/30 relative overflow-hidden order-2 lg:order-1">
             {/* Faux WhatsApp UI */}
             <div className="w-full max-w-[280px] bg-[#050505] border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
@@ -139,6 +158,6 @@ export default function Features() {
 
       {/* LINE: Bottom of Features Section */}
       <div className="w-full h-px bg-neutral-700/30"></div>
-    </section>
+    </motion.section>
   );
 }

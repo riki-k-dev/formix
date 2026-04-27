@@ -1,16 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, easeOut } from "framer-motion";
 import { Github } from "lucide-react";
 
 export default function Hero() {
+  // Animation variants define kar lete hain for clean code
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.8, ease: easeOut },
+    },
+  };
+
   return (
     <section className="relative z-10 flex flex-col justify-center items-center text-center px-6 pt-40 pb-20 min-h-[85vh]">
       <div className="max-w-200 flex flex-col items-center">
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial="hidden"
+          animate="visible"
+          variants={itemVariants}
           className="mb-8 border border-white/10 flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-neutral-400 rounded-sm bg-white/2"
         >
           <span className="relative flex w-1.5 h-1.5 items-center justify-center">
@@ -21,8 +32,9 @@ export default function Hero() {
         </motion.div>
 
         <motion.h1
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: easeOut, delay: 0.1 }}
           className="text-[54px] font-mono leading-[1.15] tracking-tight mb-6"
         >
           Generate Better Forms,
@@ -31,8 +43,9 @@ export default function Hero() {
         </motion.h1>
 
         <motion.p
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: easeOut, delay: 0.2 }}
           className="text-neutral-300 text-[16px] leading-relaxed max-w-135"
         >
           Create AI-powered headless forms. Generate Schemas, APIs and UIs in
@@ -41,9 +54,9 @@ export default function Hero() {
 
         {/* CTA BUTTONS */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ duration: 0.8, ease: easeOut, delay: 0.3 }}
           className="flex items-center justify-center gap-4 mt-8"
         >
           <Link
@@ -53,7 +66,7 @@ export default function Hero() {
             Try It Now ⟶
           </Link>
           <a
-            href="https://github.com"
+            href="https://github.com/riki-k-dev/formix"
             target="_blank"
             rel="noopener noreferrer"
             className="group bg-neutral-900/30 backdrop-blur-md border border-neutral-800 text-neutral-300 px-5 py-2.5 text-sm font-medium rounded-md hover:bg-neutral-800/80 hover:text-white hover:border-neutral-700 transition-all flex items-center gap-2.5"
@@ -62,7 +75,10 @@ export default function Hero() {
               size={16}
               className="text-neutral-500 group-hover:text-white transition-colors"
             />
-            Star On GitHub
+            <span>View Source</span>
+            <span className="ml-1 px-1.5 py-0.5 rounded bg-neutral-800 text-[10px] text-neutral-500 group-hover:bg-neutral-700 group-hover:text-neutral-300 transition-colors">
+              v1.0.0
+            </span>
           </a>
         </motion.div>
       </div>

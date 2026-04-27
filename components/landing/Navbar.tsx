@@ -20,12 +20,15 @@ export default function Navbar() {
           </span>
         </Link>
 
-        <nav className="flex gap-8 ml-15 text-sm text-neutral-300">
-          <Link href="#" className="hover:text-white transition-colors">
+        <nav className="flex gap-8 ml-11 text-sm text-neutral-300">
+          <Link href="#solution" className="hover:text-white transition-colors">
             Feature
           </Link>
-          <Link href="#" className="hover:text-white transition-colors">
+          <Link href="#pricing" className="hover:text-white transition-colors">
             Pricing
+          </Link>
+          <Link href="#" className="hover:text-white transition-colors">
+            Docs
           </Link>
           <Link href="#" className="hover:text-white transition-colors">
             Blog
@@ -39,7 +42,7 @@ export default function Navbar() {
           href="/login"
           className="bg-white text-black px-4 py-2 text-sm font-medium flex items-center gap-2 rounded-md hover:bg-neutral-200 transition-colors"
         >
-          Get Started Now <span className="font-light">⟶</span>
+          Get Started Now ⟶
         </Link>
       </div>
     </header>

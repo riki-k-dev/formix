@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Plus, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +41,14 @@ export default function FAQ() {
   };
 
   return (
-    <section className="w-full flex flex-col items-center relative z-10 bg-[#0a0a0a]">
+    <motion.section
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.1 }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      id="faq"
+      className="w-full flex flex-col items-center relative z-10 bg-[#0a0a0a]"
+    >
       <div className="w-full max-w-300 flex flex-col border-x border-neutral-700/30">
         {/* FAQ HEADER */}
         <div className="p-10 lg:p-16 border-b border-neutral-700/30 text-center flex flex-col items-center">
@@ -116,6 +124,6 @@ export default function FAQ() {
 
       {/* LINE: Bottom of FAQ Section */}
       <div className="w-full h-px bg-neutral-700/30"></div>
-    </section>
+    </motion.section>
   );
 }

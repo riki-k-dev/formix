@@ -1,10 +1,19 @@
+"use client";
+
+import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import { Github, Twitter, Mail } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="w-full flex flex-col items-center relative z-10 bg-[#0a0a0a]">
+    <motion.footer
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.1 }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      className="w-full flex flex-col items-center relative z-10 bg-[#0a0a0a]"
+    >
       <div className="w-full max-w-300 flex flex-col border-x border-neutral-700/30">
         {/* TOP SECTION: Grid Links & Brand */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5">
@@ -28,7 +37,7 @@ export default function Footer() {
             </p>
             <div className="flex items-center gap-4 mt-2">
               <a
-                href="https://github.com"
+                href="https://github.com/riki-k-dev/formix"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-neutral-500 hover:text-white transition-colors"
@@ -36,7 +45,7 @@ export default function Footer() {
                 <Github size={18} />
               </a>
               <a
-                href="#"
+                href="https://x.com/rikiKDev"
                 className="text-neutral-500 hover:text-white transition-colors"
               >
                 <Twitter size={18} />
@@ -54,19 +63,19 @@ export default function Footer() {
           <div className="p-8 md:p-10 lg:p-12 border-b lg:border-r border-neutral-700/30 flex flex-col gap-4">
             <h4 className="text-white font-medium text-sm mb-1">Product</h4>
             <Link
-              href="#"
-              className="text-sm text-neutral-500 hover:text-white transition-colors"
-            >
-              Feature
-            </Link>
-            <Link
-              href="#"
+              href="#problem"
               className="text-sm text-neutral-500 hover:text-white transition-colors"
             >
               Problem
             </Link>
             <Link
-              href="#"
+              href="#solution"
+              className="text-sm text-neutral-500 hover:text-white transition-colors"
+            >
+              Feature
+            </Link>
+            <Link
+              href="#pricing"
               className="text-sm text-neutral-500 hover:text-white transition-colors"
             >
               Pricing
@@ -77,7 +86,6 @@ export default function Footer() {
             >
               Dashboard
             </Link>
-            {/* <Link href="#" className="text-sm text-neutral-500 hover:text-white transition-colors">Changelog</Link> */}
           </div>
 
           {/* Resources Links Box */}
@@ -96,7 +104,7 @@ export default function Footer() {
               Blog
             </Link>
             <Link
-              href="#"
+              href="#faq"
               className="text-sm text-neutral-500 hover:text-white transition-colors"
             >
               FAQ
@@ -145,6 +153,6 @@ export default function Footer() {
           </div>
         </div>
       </div>
-    </footer>
+    </motion.footer>
   );
 }

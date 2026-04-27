@@ -1,3 +1,6 @@
+"use client";
+
+import { motion } from "framer-motion";
 import { Database, Terminal, ShieldCheck, Inbox, Webhook } from "lucide-react";
 
 const problems = [
@@ -10,7 +13,14 @@ const problems = [
 
 export default function Problem() {
   return (
-    <section className="w-full flex flex-col items-center relative -mt-20 z-10 bg-[#0a0a0a]">
+    <motion.section
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      id="problem"
+      className="w-full flex flex-col items-center relative -mt-20 z-10 bg-[#0a0a0a]"
+    >
       <div className="w-full max-w-300 grid grid-cols-1 lg:grid-cols-2 border-x border-neutral-700/30">
         {/* LEFT COLUMN */}
         <div className="p-10 lg:p-16 lg:border-r border-neutral-700/30 flex flex-col justify-center">
@@ -55,6 +65,6 @@ export default function Problem() {
 
       {/* LINE 4 */}
       <div className="w-full h-px bg-neutral-700/30"></div>
-    </section>
+    </motion.section>
   );
 }

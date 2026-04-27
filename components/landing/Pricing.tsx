@@ -1,3 +1,6 @@
+"use client";
+
+import { motion } from "framer-motion";
 import Link from "next/link";
 import { Check, Zap, ShieldCheck } from "lucide-react";
 
@@ -37,7 +40,14 @@ const plans = [
 
 export default function Pricing() {
   return (
-    <section className="w-full flex flex-col items-center relative z-10 bg-[#0a0a0a]">
+    <motion.section
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.1 }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      id="pricing"
+      className="w-full flex flex-col items-center relative z-10 bg-[#0a0a0a]"
+    >
       <div className="w-full max-w-300 flex flex-col border-x border-neutral-700/30">
         {/* PRICING HEADER */}
         <div className="p-10 lg:p-16 border-b border-neutral-700/30 text-center flex flex-col items-center">
@@ -129,6 +139,6 @@ export default function Pricing() {
 
       {/* LINE: Bottom of Pricing Section */}
       <div className="w-full h-px bg-neutral-700/30"></div>
-    </section>
+    </motion.section>
   );
 }

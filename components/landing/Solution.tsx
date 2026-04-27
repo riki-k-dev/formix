@@ -1,3 +1,6 @@
+"use client";
+
+import { motion } from "framer-motion";
 import { Sparkles, Code2, MessageSquare } from "lucide-react";
 
 const steps = [
@@ -23,7 +26,14 @@ const steps = [
 
 export default function Solution() {
   return (
-    <section className="w-full flex flex-col items-center relative z-10 bg-[#0a0a0a]">
+    <motion.section
+      initial={{ opacity: 0, y: 50 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.1 }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      id="solution"
+      className="w-full flex flex-col items-center relative z-10 bg-[#0a0a0a]"
+    >
       <div className="w-full max-w-300 flex flex-col border-x border-neutral-700/30">
         {/* HEADER AREA */}
         <div className="p-10 lg:p-16 border-b border-neutral-700/30 text-center flex flex-col items-center">
@@ -67,6 +77,6 @@ export default function Solution() {
 
       {/* LINE 5: Bottom of Solution Section */}
       <div className="w-full h-px bg-neutral-700/30"></div>
-    </section>
+    </motion.section>
   );
 }
