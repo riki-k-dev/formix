@@ -1,0 +1,50 @@
+---
+title: "Securing Your Form API Endpoints from Spam"
+excerpt: "Learn how we handle rate limiting, CAPTCHA alternatives, and payload validation under the hood at Formix."
+date: "April 02, 2026"
+readTime: "6 min read"
+category: "Engineering"
+author: "Riki Kashyap"
+role: "Founder, Formix"
+imageGradient: "from-neutral-800/80 to-neutral-950"
+---
+
+When you build a headless form, the endpoint handling the data is inherently exposed. Without proper security measures, malicious bots can flood your database, exhaust your API limits, and ruin your analytics.
+
+At Formix, we process thousands of submissions daily. Here is a peek under the hood at how we secure our ingestion pipeline.
+
+## 1. Sliding Window Rate Limiting
+
+Static rate limiting (e.g., 10 requests per minute) is easily bypassed by slow-rate botnets. We use a **Sliding Window algorithm** backed by Upstash Redis at the edge.
+
+When a submission hits our `/api/v1/submit/[id]` endpoint, we instantly check the IP address against Redis.
+
+```typescript
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+});
+
+// Allow 30 requests per minute per IP
+export const submissionRateLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(30, "1 m"),
+});
+```
+
+If an IP exceeds this, the request is dropped with a `429 Too Many Requests` status before it ever touches our Postgres database.
+
+## 2. Strict Schema Enforcement (Zero-Trust Payload)
+
+A common attack vector is payload injection—sending massive strings or unexpected JSON keys to crash the database.
+
+Because Formix generates a strict JSON schema for every form, we perform **Zero-Trust Payload Validation**. If your form schema only expects `name` and `email`, any request containing an `is_admin` key is automatically stripped and sanitized.
+
+## 3. The End of CAPTCHA
+
+Nobody likes finding crosswalks or traffic lights. Instead of relying on visible CAPTCHAs, we advise developers to implement honeypot fields on their frontends, combined with our backend time-to-completion analysis (rejecting forms filled faster than humanly possible).
+
+By combining Edge rate-limiting, strict Zod-based schema validation, and API Key authorization, Formix ensures that the data hitting your dashboard is clean, structured, and actually from humans.

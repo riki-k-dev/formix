@@ -1,0 +1,73 @@
+---
+title: "Automating Workflows with Formix Webhooks"
+excerpt: "A deep dive into routing your form submission data in real-time to Slack, Discord, and internal databases."
+date: "March 25, 2026"
+readTime: "5 min read"
+category: "Guides"
+author: "Riki Kashyap"
+role: "Founder, Formix"
+imageGradient: "from-neutral-800/80 to-neutral-950"
+---
+
+Data collection is only half the battle. The real value comes from what you _do_ with that data. Do you alert your sales team? Do you sync it to a CRM? Do you trigger an email sequence?
+
+Formix provides built-in integrations for major platforms, but for ultimate flexibility, our **Webhooks Engine** allows you to route real-time HTTP notifications anywhere.
+
+## The Webhook Payload
+
+When a user submits a form (either via your custom UI or WhatsApp Flow), Formix immediately dispatches a `POST` request to your configured webhook URL.
+
+The payload is structured, predictable, and easy to parse:
+
+```json
+{
+  "event": "form.submitted",
+  "formId": "frm_abc123",
+  "formName": "Enterprise Demo Request",
+  "submissionId": "sub_xyz987",
+  "source": "api",
+  "timestamp": "2026-03-25T14:22:10.000Z",
+  "data": {
+    "first_name": "Alice",
+    "company": "Acme Corp",
+    "revenue": "$10M+"
+  }
+}
+```
+
+## Handling Webhooks in Node.js / Next.js
+
+Setting up a receiver is incredibly simple. If you are using Next.js App Router, you can create a Route Handler to listen for these events.
+
+```typescript
+// app/api/formix-webhook/route.ts
+import { NextResponse } from "next/server";
+
+export async function POST(req: Request) {
+  try {
+    const payload = await req.json();
+
+    // Verify it's a submission event
+    if (payload.event === "form.submitted") {
+      const { data, formName } = payload;
+
+      // Example: Forward to an internal Slack channel
+      await notifySlackChannel(
+        `New lead from ${formName}: ${data.first_name} at ${data.company}`,
+      );
+    }
+
+    return NextResponse.json({ received: true }, { status: 200 });
+  } catch (error) {
+    console.error("Webhook error:", error);
+    return NextResponse.json({ error: "Bad payload" }, { status: 400 });
+  }
+}
+```
+
+## Best Practices
+
+1. **Respond Quickly:** Always return a `200 OK` status immediately. If you need to perform heavy processing (like PDF generation or API calls to Salesforce), offload that work to a background queue.
+2. **Idempotency:** Webhooks can occasionally be delivered more than once (e.g., network timeouts). Always check the `submissionId` against your database to prevent duplicate processing.
+
+By leveraging webhooks, Formix acts as the unified ingestion layer, letting your backend focus entirely on business logic.

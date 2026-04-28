@@ -8,7 +8,7 @@ import { Github, Twitter, Mail } from "lucide-react";
 export default function Footer() {
   return (
     <motion.footer
-      initial={{ opacity: 0, y: 50 }}
+      initial={{ opacity: 0, y: 0 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.1 }}
       transition={{ duration: 0.8, ease: "easeOut" }}
@@ -63,19 +63,19 @@ export default function Footer() {
           <div className="p-8 md:p-10 lg:p-12 border-b lg:border-r border-neutral-700/30 flex flex-col gap-4">
             <h4 className="text-white font-medium text-sm mb-1">Product</h4>
             <Link
-              href="#problem"
+              href="/#problem"
               className="text-sm text-neutral-500 hover:text-white transition-colors"
             >
               Problem
             </Link>
             <Link
-              href="#solution"
+              href="/#solution"
               className="text-sm text-neutral-500 hover:text-white transition-colors"
             >
               Feature
             </Link>
             <Link
-              href="#pricing"
+              href="/#pricing"
               className="text-sm text-neutral-500 hover:text-white transition-colors"
             >
               Pricing
@@ -104,7 +104,7 @@ export default function Footer() {
               Blog
             </Link>
             <Link
-              href="#faq"
+              href="/#faq"
               className="text-sm text-neutral-500 hover:text-white transition-colors"
             >
               FAQ

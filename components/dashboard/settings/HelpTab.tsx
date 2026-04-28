@@ -16,7 +16,7 @@ export default function HelpTab() {
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
           <a
-            href="#"
+            href="/docs"
             className="flex flex-col items-center p-5 border border-neutral-800 rounded-xl hover:bg-neutral-900/50 transition-colors group"
           >
             <ExternalLink
