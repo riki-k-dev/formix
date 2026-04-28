@@ -1,7 +1,8 @@
 import { getAllPosts } from "@/lib/mdx";
 import BlogClient from "./blog-client";
+import { Metadata } from "next";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Blog | Formix",
   description:
     "Product updates, engineering deep dives, and thoughts on the future of headless architecture.",

@@ -59,7 +59,7 @@ const CodeBlock = ({ code, language }: { code: string; language: string }) => {
   );
 };
 
-export default function DocsPage() {
+export default function DocsClient() {
   const [activeSection, setActiveSection] = useState("introduction");
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -150,19 +150,6 @@ export default function DocsPage() {
 
         {/* Sidebar Nav */}
         <div className="flex-1 overflow-y-auto py-6 flex flex-col gap-6 custom-scrollbar px-3 overflow-x-hidden">
-          {/* <AnimatePresence initial={false}>
-            {!isCollapsed && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="px-3 text-xs font-bold text-neutral-600 uppercase tracking-widest"
-              >
-                Documentation
-              </motion.div>
-            )}
-          </AnimatePresence> */}
-
           <nav className="flex flex-col gap-1.5 w-full">
             {SECTIONS.map((section) => {
               const isActive = activeSection === section.id;
