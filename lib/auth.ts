@@ -14,13 +14,8 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
-    sendPasswordResetEmail: async ({
-      user,
-      url,
-    }: {
-      user: { email: string; name: string };
-      url: string;
-    }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    sendResetPassword: async ({ user, url }: any) => {
       try {
         await resend.emails.send({
           from: "Formix <noreply@formix.rikikashyap.dev>",
@@ -57,13 +52,8 @@ export const auth = betterAuth({
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
-    sendVerificationEmail: async ({
-      user,
-      url,
-    }: {
-      user: { email: string; name: string };
-      url: string;
-    }) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    sendVerificationEmail: async ({ user, url }: any) => {
       try {
         await resend.emails.send({
           from: "Formix <noreply@formix.rikikashyap.dev>",
