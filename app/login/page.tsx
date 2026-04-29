@@ -72,8 +72,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      // @ts-expect-error - forgetPassword is valid in Better Auth but types may lag behind dynamically
-      const { error } = await authClient.forgetPassword({
+      const { error } = await authClient.requestPasswordReset({
         email,
         redirectTo: "/reset-password",
       });
