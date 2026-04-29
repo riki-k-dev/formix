@@ -99,7 +99,7 @@ export default function ContactClient() {
                       Support
                     </p>
                     <p className="text-xs text-neutral-500 font-mono mt-1">
-                      support@formix.dev
+                      support@formix.com
                     </p>
                   </div>
                 </a>

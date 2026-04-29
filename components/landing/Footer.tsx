@@ -115,19 +115,19 @@ export default function Footer() {
           <div className="p-8 md:p-10 lg:p-12 border-b border-neutral-700/30 flex flex-col gap-4">
             <h4 className="text-white font-medium text-sm mb-1">Legal</h4>
             <Link
-              href="#"
+              href="/privacy"
               className="text-sm text-neutral-500 hover:text-white transition-colors"
             >
               Privacy Policy
             </Link>
             <Link
-              href="#"
+              href="/terms"
               className="text-sm text-neutral-500 hover:text-white transition-colors"
             >
               Terms of Service
             </Link>
             <Link
-              href="#"
+              href="/cookies"
               className="text-sm text-neutral-500 hover:text-white transition-colors"
             >
               Cookie Policy
