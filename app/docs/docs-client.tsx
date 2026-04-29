@@ -14,6 +14,8 @@ import {
   Check,
   PanelLeftClose,
   PanelLeftOpen,
+  Menu,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -35,9 +37,9 @@ const CodeBlock = ({ code, language }: { code: string; language: string }) => {
   };
 
   return (
-    <div className="relative group rounded-xl overflow-hidden bg-[#050505] border border-neutral-800 my-6 shadow-2xl">
+    <div className="relative group rounded-xl overflow-hidden bg-[#050505] border border-neutral-800 my-6 shadow-2xl w-full">
       <div className="flex items-center justify-between px-4 py-2.5 bg-neutral-900/80 border-b border-neutral-800">
-        <span className="text-[11px] font-mono text-neutral-400 font-medium uppercase tracking-wider">
+        <span className="text-[10px] md:text-[11px] font-mono text-neutral-400 font-medium uppercase tracking-wider">
           {language}
         </span>
         <button
@@ -52,7 +54,7 @@ const CodeBlock = ({ code, language }: { code: string; language: string }) => {
           )}
         </button>
       </div>
-      <div className="p-5 overflow-x-auto text-[13px] font-mono text-neutral-300 leading-relaxed whitespace-pre-wrap break-words">
+      <div className="p-4 md:p-5 overflow-x-auto text-[12px] md:text-[13px] font-mono text-neutral-300 leading-relaxed whitespace-pre">
         {code}
       </div>
     </div>
@@ -62,7 +64,9 @@ const CodeBlock = ({ code, language }: { code: string; language: string }) => {
 export default function DocsClient() {
   const [activeSection, setActiveSection] = useState("introduction");
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
+  // Scroll spy to update active section
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -83,6 +87,17 @@ export default function DocsClient() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (isMobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isMobileOpen]);
+
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
@@ -96,17 +111,64 @@ export default function DocsClient() {
     }
   };
 
+  // Reusable Nav Links renderer for both Desktop and Mobile Sidebar
+  const renderNavLinks = (isMobileView: boolean) => (
+    <nav className="flex flex-col gap-1.5 w-full">
+      {SECTIONS.map((section) => {
+        const isActive = activeSection === section.id;
+        return (
+          <button
+            key={section.id}
+            onClick={() => {
+              scrollTo(section.id);
+              if (isMobileView) setIsMobileOpen(false);
+            }}
+            title={!isMobileView && isCollapsed ? section.title : undefined}
+            className={cn(
+              "flex items-center rounded-lg px-3 transition-colors group relative overflow-hidden h-10 w-full shrink-0 cursor-pointer",
+              isActive
+                ? "bg-neutral-800/60 text-neutral-200"
+                : "hover:bg-neutral-800/30 hover:text-neutral-300",
+            )}
+          >
+            <section.icon
+              size={18}
+              className={cn(
+                "shrink-0 transition-colors",
+                isActive
+                  ? "text-amber-400"
+                  : "text-neutral-500 group-hover:text-neutral-300",
+              )}
+            />
+            <AnimatePresence initial={false}>
+              {(!isCollapsed || isMobileView) && (
+                <motion.span
+                  initial={{ opacity: 0, width: 0, marginLeft: 0 }}
+                  animate={{ opacity: 1, width: "auto", marginLeft: 12 }}
+                  exit={{ opacity: 0, width: 0, marginLeft: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="whitespace-nowrap flex-1 overflow-hidden text-left"
+                >
+                  {section.title}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </button>
+        );
+      })}
+    </nav>
+  );
+
   return (
     <div className="flex h-screen bg-[#0a0a0a] text-neutral-200 font-sans overflow-hidden">
-      {/* SIDEBAR */}
+      {/* DESKTOP SIDEBAR */}
       <motion.aside
         initial={false}
         animate={{ width: isCollapsed ? 68 : 256 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="h-screen bg-[#0a0a0a] border-r border-neutral-800 flex flex-col text-sm text-neutral-400 font-medium overflow-hidden shrink-0 z-20"
+        className="hidden md:flex h-screen bg-[#0a0a0a] border-r border-neutral-800 flex-col text-sm text-neutral-400 font-medium overflow-hidden shrink-0 z-20"
       >
-        {/* Header Logo */}
-        <div className="h-16 flex items-center px-4 border-b border-neutral-800 shrink-0 overflow-hidden w-full">
+        <div className="h-16 flex items-center px-4 border-b border-neutral-800 shrink-0 w-full">
           <div className="flex items-center whitespace-nowrap w-full">
             <Link
               href="/"
@@ -147,60 +209,80 @@ export default function DocsClient() {
             </AnimatePresence>
           </div>
         </div>
-
-        {/* Sidebar Nav */}
         <div className="flex-1 overflow-y-auto py-6 flex flex-col gap-6 custom-scrollbar px-3 overflow-x-hidden">
-          <nav className="flex flex-col gap-1.5 w-full">
-            {SECTIONS.map((section) => {
-              const isActive = activeSection === section.id;
-              return (
-                <button
-                  key={section.id}
-                  onClick={() => scrollTo(section.id)}
-                  title={isCollapsed ? section.title : undefined}
-                  className={cn(
-                    "flex items-center rounded-lg px-3 transition-colors group relative overflow-hidden h-10 w-full shrink-0 cursor-pointer",
-                    isActive
-                      ? "bg-neutral-800/60 text-neutral-200"
-                      : "hover:bg-neutral-800/30 hover:text-neutral-300",
-                  )}
-                >
-                  <section.icon
-                    size={18}
-                    className={cn(
-                      "shrink-0 transition-colors",
-                      isActive
-                        ? "text-amber-400"
-                        : "text-neutral-500 group-hover:text-neutral-300",
-                    )}
-                  />
-                  <AnimatePresence initial={false}>
-                    {!isCollapsed && (
-                      <motion.span
-                        initial={{ opacity: 0, width: 0, marginLeft: 0 }}
-                        animate={{ opacity: 1, width: "auto", marginLeft: 12 }}
-                        exit={{ opacity: 0, width: 0, marginLeft: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="whitespace-nowrap flex-1 overflow-hidden text-left"
-                      >
-                        {section.title}
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                </button>
-              );
-            })}
-          </nav>
+          {renderNavLinks(false)}
         </div>
       </motion.aside>
+
+      {/* MOBILE SIDEBAR & OVERLAY */}
+      <AnimatePresence>
+        {isMobileOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+            />
+            <motion.aside
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+              className="fixed top-0 left-0 h-screen w-64 bg-[#0a0a0a] border-r border-neutral-800 flex flex-col text-sm text-neutral-400 font-medium overflow-hidden shrink-0 z-50 md:hidden"
+            >
+              <div className="h-16 flex items-center justify-between px-4 border-b border-neutral-800 shrink-0 w-full">
+                <div className="flex items-center">
+                  <Link
+                    href="/"
+                    className="border-zinc-800 border rounded-lg p-1 flex items-center justify-center shrink-0 w-9 h-9"
+                    onClick={() => setIsMobileOpen(false)}
+                  >
+                    <Image
+                      src="/i2-t4.png"
+                      alt="Formix Logo"
+                      width={26}
+                      height={26}
+                      className="shrink-0 object-contain rounded-md"
+                      priority
+                    />
+                  </Link>
+                  <span className="text-neutral-200 font-bold text-lg tracking-tight ml-3">
+                    Docs
+                  </span>
+                </div>
+                <button
+                  onClick={() => setIsMobileOpen(false)}
+                  className="text-neutral-500 hover:text-white transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto py-6 flex flex-col gap-6 px-3">
+                {renderNavLinks(true)}
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* MAIN LAYOUT */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header */}
-        <header className="h-16 flex items-center justify-between px-6 border-b border-neutral-800 shrink-0 bg-[#0a0a0a]/90 backdrop-blur-md">
+        <header className="h-16 flex items-center justify-between px-4 md:px-6 border-b border-neutral-800 shrink-0 bg-[#0a0a0a]/90 backdrop-blur-md">
+          {/* Mobile Menu Toggle */}
+          <button
+            onClick={() => setIsMobileOpen(true)}
+            className="md:hidden text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer"
+          >
+            <Menu size={22} />
+          </button>
+
+          {/* Desktop Sidebar Toggle */}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer"
+            className="hidden md:block text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer"
             title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           >
             {isCollapsed ? (
@@ -210,19 +292,19 @@ export default function DocsClient() {
             )}
           </button>
 
-          <nav className="flex items-center gap-4 text-sm font-medium">
+          <nav className="flex items-center gap-3 md:gap-4 text-sm font-medium">
             <Link
               href="/dashboard"
-              className="text-neutral-400 hover:text-white transition-colors"
+              className="hidden sm:block text-neutral-400 hover:text-white transition-colors"
             >
               Dashboard
             </Link>
-            <div className="h-4 w-px bg-neutral-800"></div>
+            <div className="hidden sm:block h-4 w-px bg-neutral-800"></div>
             <Link
               href="/login"
-              className="flex items-center gap-2 text-black bg-white px-4 py-1.5 rounded-md hover:bg-neutral-200 transition-colors"
+              className="flex items-center gap-2 text-black bg-white px-3 py-1.5 md:px-4 md:py-1.5 rounded-md hover:bg-neutral-200 transition-colors text-xs md:text-sm whitespace-nowrap"
             >
-              Get Started Now ⟶
+              Get Started <span className="hidden sm:inline">Now ⟶</span>
             </Link>
           </nav>
         </header>
@@ -230,11 +312,11 @@ export default function DocsClient() {
         {/* Scrollable Content */}
         <main
           id="docs-scroll-container"
-          className="flex-1 overflow-y-auto px-6 md:px-12 lg:px-24 py-12 lg:py-20 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] scroll-smooth"
+          className="flex-1 overflow-y-auto px-5 sm:px-8 md:px-12 lg:px-24 py-10 lg:py-20 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] scroll-smooth"
         >
           <div className="max-w-3xl mx-auto">
             {/* INTRODUCTION */}
-            <section id="introduction" className="mb-24 scroll-mt-8">
+            <section id="introduction" className="mb-20 md:mb-24 scroll-mt-8">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -246,11 +328,11 @@ export default function DocsClient() {
                     Overview
                   </span>
                 </div>
-                <h1 className="text-4xl md:text-5xl font-mono text-white tracking-tight mb-6">
+                <h1 className="text-3xl md:text-4xl lg:text-5xl font-mono text-white tracking-tight mb-6">
                   Introduction
                 </h1>
 
-                <p className="text-neutral-400 leading-relaxed mb-8 text-[15px]">
+                <p className="text-neutral-400 leading-relaxed mb-8 text-sm md:text-[15px]">
                   Welcome to the Formix developer documentation. Formix is an
                   AI-powered headless form infrastructure. It allows you to
                   generate backend schemas, databases, and APIs using natural
@@ -258,8 +340,8 @@ export default function DocsClient() {
                   applications.
                 </p>
 
-                <div className="bg-neutral-900/40 border border-neutral-800 rounded-xl p-6 mb-8">
-                  <h3 className="text-white font-medium mb-3 text-lg">
+                <div className="bg-neutral-900/40 border border-neutral-800 rounded-xl p-5 md:p-6 mb-8">
+                  <h3 className="text-white font-medium mb-3 text-base md:text-lg">
                     Why Headless?
                   </h3>
                   <p className="text-neutral-400 text-sm leading-relaxed mb-4">
@@ -267,7 +349,7 @@ export default function DocsClient() {
                     With Formix, you retain 100% control over your UI. We handle
                     the heavy lifting:
                   </p>
-                  <ul className="text-sm text-neutral-400 space-y-2 list-disc list-inside ml-2">
+                  <ul className="text-sm text-neutral-400 space-y-2 list-disc list-inside ml-1 md:ml-2">
                     <li>Database provisioning and schema structuring</li>
                     <li>Secure data collection and validation</li>
                     <li>Spam prevention and rate limiting</li>
@@ -280,17 +362,17 @@ export default function DocsClient() {
             </section>
 
             {/* AUTHENTICATION */}
-            <section id="authentication" className="mb-24 scroll-mt-8">
+            <section id="authentication" className="mb-20 md:mb-24 scroll-mt-8">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-lg bg-neutral-900 border border-neutral-800 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-lg bg-neutral-900 border border-neutral-800 flex items-center justify-center shrink-0">
                   <Key size={18} className="text-neutral-400" />
                 </div>
-                <h2 className="text-3xl font-mono text-white tracking-tight">
+                <h2 className="text-2xl md:text-3xl font-mono text-white tracking-tight">
                   Authentication
                 </h2>
               </div>
 
-              <p className="text-neutral-400 leading-relaxed mb-6 text-[15px]">
+              <p className="text-neutral-400 leading-relaxed mb-6 text-sm md:text-[15px]">
                 All API requests to Formix must be authenticated using your
                 Secret API Key. You can generate and manage your API keys from
                 the{" "}
@@ -303,10 +385,10 @@ export default function DocsClient() {
                 section of your dashboard.
               </p>
 
-              <div className="bg-amber-500/10 border border-amber-500/20 p-5 rounded-xl mb-8">
+              <div className="bg-amber-500/10 border border-amber-500/20 p-4 md:p-5 rounded-xl mb-8">
                 <div className="flex items-start gap-3">
-                  <span className="text-amber-500 mt-0.5">⚠️</span>
-                  <p className="text-amber-400/90 text-sm leading-relaxed">
+                  <span className="text-amber-500 mt-0.5 shrink-0">⚠️</span>
+                  <p className="text-amber-400/90 text-xs md:text-sm leading-relaxed">
                     <strong>Security Notice:</strong> Your API key carries high
                     privileges and grants full access to submit data to your
                     forms. <strong>Never expose it in client-side code</strong>{" "}
@@ -317,7 +399,7 @@ export default function DocsClient() {
                 </div>
               </div>
 
-              <p className="text-neutral-400 leading-relaxed mb-4 text-[15px]">
+              <p className="text-neutral-400 leading-relaxed mb-4 text-sm md:text-[15px]">
                 Pass your API key in the `Authorization` header of all HTTP
                 requests:
               </p>
@@ -329,37 +411,39 @@ export default function DocsClient() {
             </section>
 
             {/* API REFERENCE */}
-            <section id="api-reference" className="mb-24 scroll-mt-8">
+            <section id="api-reference" className="mb-20 md:mb-24 scroll-mt-8">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-lg bg-neutral-900 border border-neutral-800 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-lg bg-neutral-900 border border-neutral-800 flex items-center justify-center shrink-0">
                   <Terminal size={18} className="text-neutral-400" />
                 </div>
-                <h2 className="text-3xl font-mono text-white tracking-tight">
+                <h2 className="text-2xl md:text-3xl font-mono text-white tracking-tight">
                   API Reference
                 </h2>
               </div>
 
-              <p className="text-neutral-400 leading-relaxed mb-8 text-[15px]">
+              <p className="text-neutral-400 leading-relaxed mb-8 text-sm md:text-[15px]">
                 Submitting data to your Formix backend is straightforward. Send
                 a POST request containing a <code>data</code> object to your
                 specific form endpoint.
               </p>
 
               <div className="mb-12">
-                <h3 className="text-lg font-medium text-white mb-4">
+                <h3 className="text-base md:text-lg font-medium text-white mb-4">
                   Submit a response
                 </h3>
 
-                <div className="flex items-center gap-3 mb-6 p-4 bg-neutral-900/30 border border-neutral-800 rounded-xl overflow-x-auto">
-                  <span className="bg-green-500/10 text-green-500 border border-green-500/20 px-2 py-1 rounded text-xs font-bold font-mono uppercase tracking-wider shrink-0">
+                <div className="flex items-center gap-3 mb-6 p-3 md:p-4 bg-neutral-900/30 border border-neutral-800 rounded-xl overflow-x-auto">
+                  <span className="bg-green-500/10 text-green-500 border border-green-500/20 px-2 py-1 rounded text-[10px] md:text-xs font-bold font-mono uppercase tracking-wider shrink-0">
                     POST
                   </span>
-                  <code className="text-neutral-300 font-mono text-sm whitespace-nowrap">
+                  <code className="text-neutral-300 font-mono text-xs md:text-sm whitespace-nowrap">
                     https://formix.dev/api/v1/submit/&#123;form_id&#125;
                   </code>
                 </div>
 
-                <h4 className="text-white font-medium mb-3">cURL Example</h4>
+                <h4 className="text-white text-sm md:text-base font-medium mb-3">
+                  cURL Example
+                </h4>
                 <CodeBlock
                   language="BASH"
                   code={`curl -X POST https://formix.dev/api/v1/submit/frm_abc123 \\
@@ -374,7 +458,7 @@ export default function DocsClient() {
   }'`}
                 />
 
-                <h4 className="text-white font-medium mb-3 mt-10">
+                <h4 className="text-white text-sm md:text-base font-medium mb-3 mt-8 md:mt-10">
                   Next.js Server Action Example (Recommended)
                 </h4>
                 <CodeBlock
@@ -413,23 +497,23 @@ export async function submitToFormix(formData: FormData) {
             </section>
 
             {/* WEBHOOKS */}
-            <section id="webhooks" className="mb-24 scroll-mt-8">
+            <section id="webhooks" className="mb-20 md:mb-24 scroll-mt-8">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-lg bg-neutral-900 border border-neutral-800 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-lg bg-neutral-900 border border-neutral-800 flex items-center justify-center shrink-0">
                   <Webhook size={18} className="text-neutral-400" />
                 </div>
-                <h2 className="text-3xl font-mono text-white tracking-tight">
+                <h2 className="text-2xl md:text-3xl font-mono text-white tracking-tight">
                   Webhooks
                 </h2>
               </div>
 
-              <p className="text-neutral-400 leading-relaxed mb-6 text-[15px]">
+              <p className="text-neutral-400 leading-relaxed mb-6 text-sm md:text-[15px]">
                 Webhooks allow you to receive real-time HTTP notifications
                 whenever a new submission occurs. You can configure Webhook URLs
                 directly in your Formix dashboard.
               </p>
 
-              <p className="text-neutral-400 leading-relaxed mb-4 text-[15px]">
+              <p className="text-neutral-400 leading-relaxed mb-4 text-sm md:text-[15px]">
                 When an event triggers, Formix will send a <code>POST</code>{" "}
                 request to your configured URL with a JSON payload that looks
                 like this:
@@ -455,13 +539,13 @@ export async function submitToFormix(formData: FormData) {
             {/* WHATSAPP FLOWS */}
             <section
               id="whatsapp"
-              className="mb-24 scroll-mt-8 border-t border-neutral-800/50 pt-16"
+              className="mb-20 md:mb-24 scroll-mt-8 border-t border-neutral-800/50 pt-12 md:pt-16"
             >
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-lg bg-neutral-900 border border-neutral-800 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-lg bg-neutral-900 border border-neutral-800 flex items-center justify-center shrink-0">
                   <MessageSquare size={18} className="text-neutral-400" />
                 </div>
-                <h2 className="text-3xl font-mono text-white tracking-tight flex items-center gap-3">
+                <h2 className="text-2xl md:text-3xl font-mono text-white tracking-tight flex items-center gap-3 flex-wrap">
                   WhatsApp Flows
                   <span className="text-[10px] font-sans font-bold bg-neutral-800 text-amber-400 px-2 py-1 rounded border border-neutral-700 tracking-widest uppercase">
                     PRO
@@ -469,15 +553,15 @@ export async function submitToFormix(formData: FormData) {
                 </h2>
               </div>
 
-              <p className="text-neutral-400 leading-relaxed mb-6 text-[15px]">
+              <p className="text-neutral-400 leading-relaxed mb-6 text-sm md:text-[15px]">
                 With the Pro plan, you can convert any headless form into an
                 automated WhatsApp conversational bot. Formix uses the official
                 Meta Cloud API to orchestrate this directly from your JSON
                 schema.
               </p>
 
-              <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-8 mb-8">
-                <h3 className="text-white font-medium mb-4 text-lg">
+              <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-6 md:p-8 mb-8">
+                <h3 className="text-white font-medium mb-4 text-base md:text-lg">
                   Configuration Steps:
                 </h3>
                 <ol className="list-decimal pl-5 space-y-4 text-neutral-400 text-sm">
@@ -503,7 +587,7 @@ export async function submitToFormix(formData: FormData) {
                 </ol>
               </div>
 
-              <p className="text-neutral-400 leading-relaxed text-[15px]">
+              <p className="text-neutral-400 leading-relaxed text-sm md:text-[15px]">
                 Once connected, simply turn on a Flow for any active form. Users
                 can initiate the form by messaging your business number with the
                 keyword <code>START [form_id]</code> or via a generated{" "}
