@@ -14,11 +14,56 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
+    sendPasswordResetEmail: async ({
+      user,
+      url,
+    }: {
+      user: { email: string; name: string };
+      url: string;
+    }) => {
+      try {
+        await resend.emails.send({
+          from: "Formix <noreply@formix.rikikashyap.dev>",
+          to: user.email,
+          subject: "Reset your Formix password",
+          html: `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f9fafb; padding: 40px 20px; text-align: center;">
+              <div style="max-w: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; padding: 40px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); text-align: left;">
+                <h1 style="color: #111827; font-size: 24px; font-weight: 600; margin-top: 0; margin-bottom: 16px;">
+                  Reset your password
+                </h1>
+                <p style="color: #4b5563; font-size: 16px; line-height: 24px; margin-bottom: 24px;">
+                  Hi ${user.name},<br><br>
+                  Someone recently requested a password change for your Formix account. If this was you, you can set a new password here:
+                </p>
+                <div style="text-align: center; margin-bottom: 32px;">
+                  <a href="${url}" style="display: inline-block; background-color: #0a0a0a; color: #ffffff; font-size: 16px; font-weight: 500; text-decoration: none; padding: 12px 28px; border-radius: 8px;">
+                    Reset Password
+                  </a>
+                </div>
+                <p style="color: #6b7280; font-size: 14px; line-height: 20px; margin-bottom: 0;">
+                  If you didn't request this, you can safely ignore this email. Your password won't be changed.
+                </p>
+              </div>
+            </div>
+          `,
+        });
+        console.log(`✅ Password reset email sent to ${user.email}`);
+      } catch (error) {
+        console.error("❌ Failed to send password reset email:", error);
+      }
+    },
   },
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
-    sendVerificationEmail: async ({ user, url }) => {
+    sendVerificationEmail: async ({
+      user,
+      url,
+    }: {
+      user: { email: string; name: string };
+      url: string;
+    }) => {
       try {
         await resend.emails.send({
           from: "Formix <noreply@formix.rikikashyap.dev>",

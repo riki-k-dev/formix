@@ -11,9 +11,10 @@ import {
   EyeOff,
   Github,
   MailCheck,
+  KeyRound,
+  ArrowLeft,
 } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
-import Link from "next/link";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import Grid from "@/components/landing/ui/Grid";
@@ -21,14 +22,20 @@ import Separator from "@/components/landing/ui/Separator";
 
 export default function LoginPage() {
   const router = useRouter();
+
+  // Views
   const [isLogin, setIsLogin] = useState(true);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
+
+  // Loading & Error states
   const [isLoading, setIsLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<
     "google" | "github" | null
   >(null);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [verificationSent, setVerificationSent] = useState(false);
 
   // Form states
   const [name, setName] = useState("");
@@ -51,6 +58,37 @@ export default function LoginPage() {
     } catch {
       setError(`An error occurred while connecting to ${provider}.`);
       setSocialLoading(null);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      setError("Please enter your email address");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // @ts-expect-error - forgetPassword is valid in Better Auth but types may lag behind dynamically
+      const { error } = await authClient.forgetPassword({
+        email,
+        redirectTo: "/reset-password",
+      });
+
+      if (error) {
+        setError(error.message || "Failed to send reset link");
+        setIsLoading(false);
+        return;
+      }
+
+      setResetEmailSent(true);
+      setIsLoading(false);
+    } catch {
+      setError("An unexpected error occurred. Please try again.");
+      setIsLoading(false);
     }
   };
 
@@ -90,7 +128,6 @@ export default function LoginPage() {
           return;
         }
 
-        // Signup successful, email sent
         setVerificationSent(true);
         setIsLoading(false);
       }
@@ -109,7 +146,7 @@ export default function LoginPage() {
         <div className="w-full max-w-300 flex flex-col border-x border-neutral-700/30 bg-[#0a0a0a] min-h-[calc(100vh-80px)]">
           <div className="flex-1 flex items-center justify-center p-6 md:p-20 lg:p-32 border-b border-neutral-700/30">
             <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-700">
-              {/* Show this screen if verification email is sent */}
+              {/* 1. SIGNUP VERIFICATION SCREEN */}
               {verificationSent ? (
                 <div className="bg-[#050505] border border-neutral-800 p-10 rounded-2xl text-center shadow-2xl animate-in zoom-in-95 duration-500">
                   <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto border border-blue-500/20 mb-6">
@@ -128,12 +165,93 @@ export default function LoginPage() {
                       setVerificationSent(false);
                       setIsLogin(true);
                     }}
-                    className="w-full py-3 bg-white text-black font-bold text-sm rounded-lg hover:bg-neutral-200 transition-colors"
+                    className="w-full py-3 bg-white text-black font-bold text-sm rounded-lg hover:bg-neutral-200 transition-colors cursor-pointer"
                   >
                     RETURN TO LOGIN
                   </button>
                 </div>
+              ) : /* 2. FORGOT PASSWORD SUCCESS SCREEN */
+              resetEmailSent ? (
+                <div className="bg-[#050505] border border-neutral-800 p-10 rounded-2xl text-center shadow-2xl animate-in zoom-in-95 duration-500">
+                  <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto border border-amber-500/20 mb-6">
+                    <KeyRound className="w-8 h-8 text-amber-500" />
+                  </div>
+                  <h3 className="text-2xl font-medium text-white mb-2">
+                    Reset link sent
+                  </h3>
+                  <p className="text-neutral-400 text-sm leading-relaxed mb-8">
+                    We&apos;ve sent a password reset link to{" "}
+                    <strong className="text-white">{email}</strong>. Please
+                    check your inbox.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setResetEmailSent(false);
+                      setIsForgotPassword(false);
+                      setIsLogin(true);
+                    }}
+                    className="w-full py-3 bg-white text-black font-bold text-sm rounded-lg hover:bg-neutral-200 transition-colors cursor-pointer"
+                  >
+                    BACK TO LOGIN
+                  </button>
+                </div>
+              ) : /* 3. FORGOT PASSWORD FORM SCREEN */
+              isForgotPassword ? (
+                <div className="bg-transparent">
+                  <button
+                    onClick={() => {
+                      setIsForgotPassword(false);
+                      setError(null);
+                    }}
+                    className="flex items-center gap-2 text-neutral-500 hover:text-white transition-colors text-sm mb-8 font-medium cursor-pointer"
+                  >
+                    <ArrowLeft size={16} /> Back to login
+                  </button>
+
+                  <div className="flex flex-col items-center mb-8">
+                    <h1 className="text-3xl font-mono tracking-tight text-white mb-2">
+                      Reset Password
+                    </h1>
+                    <p className="text-sm text-neutral-500 font-mono text-center">
+                      Enter your email and we&apos;ll send you a reset link
+                    </p>
+                  </div>
+
+                  {error && (
+                    <div className="mb-6 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-3 text-red-400 text-sm">
+                      <AlertCircle size={16} className="shrink-0" />
+                      <p>{error}</p>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleForgotPassword} className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-medium text-neutral-400 uppercase tracking-widest font-mono">
+                        Email Address
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-neutral-200 placeholder:text-neutral-700 focus:outline-none focus:ring-1 focus:ring-neutral-600 transition-all"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="w-full mt-6 py-3 bg-white text-black font-bold text-sm rounded-lg hover:bg-neutral-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer shadow-lg shadow-white/5"
+                    >
+                      {isLoading && (
+                        <Loader2 size={16} className="animate-spin" />
+                      )}
+                      SEND RESET LINK
+                    </button>
+                  </form>
+                </div>
               ) : (
+                /* 4. MAIN LOGIN/SIGNUP SCREEN */
                 <>
                   {/* Header */}
                   <div className="flex flex-col items-center mb-10">
@@ -249,12 +367,16 @@ export default function LoginPage() {
                             Password
                           </label>
                           {isLogin && (
-                            <Link
-                              href="#"
-                              className="text-[10px] uppercase font-bold text-neutral-600 hover:text-neutral-400 transition-colors"
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsForgotPassword(true);
+                                setError(null);
+                              }}
+                              className="text-[10px] uppercase font-bold text-neutral-600 hover:text-neutral-400 transition-colors cursor-pointer"
                             >
                               Forgot?
-                            </Link>
+                            </button>
                           )}
                         </div>
                         <div className="relative">
