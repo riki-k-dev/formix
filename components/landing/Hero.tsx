@@ -27,7 +27,7 @@ export default function Hero() {
             <span className="animate-ping absolute inline-flex h-2.5 w-2.5 rounded-full bg-neutral-400 opacity-50"></span>
             <span className="relative inline-flex rounded-full w-1.5 h-1.5 bg-neutral-300"></span>
           </span>
-          AI-Driven Headless Infrastructure
+          AI-Driven Headless Form Infrastructure
         </motion.div>
 
         <motion.h1

@@ -424,7 +424,7 @@ export default function LoginPage() {
                             setIsLogin(!isLogin);
                             setError(null);
                           }}
-                          className="text-white hover:underline underline-offset-4 transition-all font-medium cursor-pointer"
+                          className="text-white hover:text-neutral-300 font-medium cursor-pointer"
                         >
                           {isLogin ? "Sign up" : "Sign in"}
                         </button>

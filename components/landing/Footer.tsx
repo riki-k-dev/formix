@@ -51,7 +51,7 @@ export default function Footer() {
                 <Twitter size={18} />
               </a>
               <a
-                href="mailto:support@formix.com"
+                href="mailto:support@formix.rikikashyap.dev"
                 className="text-neutral-500 hover:text-white transition-colors"
               >
                 <Mail size={18} />

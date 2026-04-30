@@ -113,10 +113,10 @@ export default function FAQ() {
           <p className="text-sm text-neutral-400">
             Still have questions?{" "}
             <a
-              href="mailto:support@formix.com"
+              href="mailto:support@formix.rikikashyap.dev"
               className="text-white hover:text-neutral-300 transition-colors"
             >
-              support@formix.com
+              support@formix.rikikashyap.dev
             </a>
           </p>
         </div>

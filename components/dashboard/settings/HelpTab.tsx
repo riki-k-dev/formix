@@ -31,7 +31,7 @@ export default function HelpTab() {
             </p>
           </a>
           <a
-            href="mailto:support@formix.dev"
+            href="mailto:support@formix.rikikashyap.dev"
             className="flex flex-col items-center p-5 border border-neutral-800 rounded-xl hover:bg-neutral-900/50 transition-colors group"
           >
             <Mail

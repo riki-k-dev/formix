@@ -18,12 +18,12 @@ export default function ImageSection() {
       {/* Image Box */}
       <div className="w-full max-w-300">
         <Image
-          src="/dash-2.png"
+          src="/dash-3.png"
           alt="Dashboard"
           width={1200}
           height={800}
           priority
-          className="w-full h-auto md:h-[90vh] object-cover object-top"
+          className="w-full h-auto"
         />
       </div>
 

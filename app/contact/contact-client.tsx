@@ -5,11 +5,10 @@ import { motion } from "framer-motion";
 import {
   Mail,
   MessageSquare,
-  Twitter,
-  Github,
   Send,
   Loader2,
   CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
@@ -19,15 +18,56 @@ import Separator from "@/components/landing/ui/Separator";
 export default function ContactClient() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Form states
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    subject: "",
+    message: "",
+  });
+
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
 
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
 
-    setIsSubmitting(false);
-    setIsSuccess(true);
+      if (!response.ok) {
+        throw new Error("Failed to send message");
+      }
+
+      setIsSuccess(true);
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        subject: "",
+        message: "",
+      });
+    } catch {
+      setError("Something went wrong. Please try again later.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -85,7 +125,7 @@ export default function ContactClient() {
                 </h3>
 
                 <a
-                  href="mailto:support@formix.com"
+                  href="mailto:support@formix.rikikashyap.dev"
                   className="flex items-center gap-4 group"
                 >
                   <div className="w-12 h-12 bg-neutral-900 border border-neutral-800 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-white group-hover:border-white transition-all duration-300">
@@ -99,23 +139,11 @@ export default function ContactClient() {
                       Support
                     </p>
                     <p className="text-xs text-neutral-500 font-mono mt-1">
-                      support@formix.com
+                      support@formix.rikikashyap.dev
                     </p>
                   </div>
                 </a>
               </div>
-
-              {/* <div>
-                <h3 className="text-xl font-medium text-white mb-6">Connect on Social</h3>
-                <div className="flex gap-4">
-                  <a href="https://x.com/rikiKDev" target="_blank" rel="noreferrer" className="w-12 h-12 bg-neutral-900 border border-neutral-800 rounded-xl flex items-center justify-center hover:bg-neutral-800 hover:text-white text-neutral-400 transition-all">
-                    <Twitter size={20} />
-                  </a>
-                  <a href="https://github.com/riki-k-dev/formix" target="_blank" rel="noreferrer" className="w-12 h-12 bg-neutral-900 border border-neutral-800 rounded-xl flex items-center justify-center hover:bg-neutral-800 hover:text-white text-neutral-400 transition-all">
-                    <Github size={20} />
-                  </a>
-                </div>
-              </div> */}
             </motion.div>
 
             {/* RIGHT COLUMN: The Form */}
@@ -139,7 +167,7 @@ export default function ContactClient() {
                   </p>
                   <button
                     onClick={() => setIsSuccess(false)}
-                    className="text-xs text-neutral-500 hover:text-white transition-colors underline underline-offset-4"
+                    className="text-xs text-neutral-500 hover:text-white transition-colors underline underline-offset-4 cursor-pointer"
                   >
                     Send another message
                   </button>
@@ -149,6 +177,13 @@ export default function ContactClient() {
                   onSubmit={handleSubmit}
                   className="w-full max-w-md space-y-5"
                 >
+                  {error && (
+                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-3 text-red-400 text-sm">
+                      <AlertCircle size={16} className="shrink-0" />
+                      <p>{error}</p>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div className="space-y-1.5">
                       <label className="block text-xs font-medium text-neutral-400">
@@ -156,6 +191,9 @@ export default function ContactClient() {
                       </label>
                       <input
                         type="text"
+                        name="firstName"
+                        value={formData.firstName}
+                        onChange={handleChange}
                         required
                         placeholder="John"
                         className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-neutral-200 focus:outline-none focus:border-neutral-600 focus:ring-1 focus:ring-neutral-600 transition-all placeholder:text-neutral-600"
@@ -167,6 +205,9 @@ export default function ContactClient() {
                       </label>
                       <input
                         type="text"
+                        name="lastName"
+                        value={formData.lastName}
+                        onChange={handleChange}
                         required
                         placeholder="Doe"
                         className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-neutral-200 focus:outline-none focus:border-neutral-600 focus:ring-1 focus:ring-neutral-600 transition-all placeholder:text-neutral-600"
@@ -180,6 +221,9 @@ export default function ContactClient() {
                     </label>
                     <input
                       type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
                       required
                       placeholder="john@company.com"
                       className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-neutral-200 focus:outline-none focus:border-neutral-600 focus:ring-1 focus:ring-neutral-600 transition-all placeholder:text-neutral-600"
@@ -191,8 +235,10 @@ export default function ContactClient() {
                       Subject
                     </label>
                     <select
+                      name="subject"
+                      value={formData.subject}
+                      onChange={handleChange}
                       required
-                      defaultValue=""
                       className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-neutral-200 focus:outline-none focus:border-neutral-600 focus:ring-1 focus:ring-neutral-600 transition-all appearance-none cursor-pointer"
                     >
                       <option value="" disabled>
@@ -210,6 +256,9 @@ export default function ContactClient() {
                       Message
                     </label>
                     <textarea
+                      name="message"
+                      value={formData.message}
+                      onChange={handleChange}
                       required
                       placeholder="How can we help you?"
                       className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-neutral-200 focus:outline-none focus:border-neutral-600 focus:ring-1 focus:ring-neutral-600 transition-all min-h-[120px] resize-y placeholder:text-neutral-600"
@@ -219,7 +268,7 @@ export default function ContactClient() {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full bg-white text-black font-medium py-3 rounded-lg mt-2 hover:bg-neutral-200 transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-white text-black font-medium py-3 rounded-lg mt-2 hover:bg-neutral-200 transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {isSubmitting ? (
                       <Loader2 size={18} className="animate-spin" />

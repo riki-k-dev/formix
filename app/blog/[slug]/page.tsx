@@ -52,7 +52,7 @@ export default async function BlogPostPage({
       <Grid />
       <Navbar />
 
-      <main className="flex-1 flex flex-col items-center relative z-10 w-full pt-20 pb-0">
+      <main className="flex-1 flex flex-col items-center relative z-10 w-full pt-20 pb-0 overflow-x-hidden">
         <div className="w-full max-w-300 flex flex-col border-x border-neutral-700/30 bg-[#0a0a0a] min-h-[calc(100vh-80px)]">
           {/* Post Header */}
           <div className="px-6 md:px-10 lg:px-24 py-16 lg:py-24 border-b border-neutral-700/30 text-left flex flex-col items-start">
@@ -87,9 +87,12 @@ export default async function BlogPostPage({
           </div>
 
           {/* DYNAMIC HERO IMAGE */}
-          <div className="px-6 md:px-10 lg:px-24 py-10 border-b border-neutral-700/30">
+          <div className="w-full flex flex-col">
+            {/* LINE 1*/}
+            <div className="w-[100vw] h-px bg-neutral-700/30 relative left-1/2 -translate-x-1/2"></div>
+
             <div
-              className={`w-full aspect-[21/9] md:aspect-[2.5/1] rounded-2xl overflow-hidden bg-gradient-to-br ${post.meta.imageGradient || "from-neutral-800 to-neutral-950"} border border-neutral-800 relative`}
+              className={`w-full aspect-video md:aspect-[2/1] lg:aspect-[18/10] overflow-hidden bg-gradient-to-br ${post.meta.imageGradient || "from-neutral-800 to-neutral-950"} relative`}
             >
               {post.meta.coverImage ? (
                 <Image
@@ -103,6 +106,9 @@ export default async function BlogPostPage({
                 <div className="absolute inset-0 bg-[url('/noise.png')] opacity-20 mix-blend-overlay"></div>
               )}
             </div>
+
+            {/* LINE 2 */}
+            <div className="w-[100vw] h-px bg-neutral-700/30 relative left-1/2 -translate-x-1/2"></div>
           </div>
 
           {/* Markdown Content */}

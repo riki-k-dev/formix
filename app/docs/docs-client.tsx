@@ -302,9 +302,9 @@ export default function DocsClient() {
             <div className="hidden sm:block h-4 w-px bg-neutral-800"></div>
             <Link
               href="/login"
-              className="flex items-center gap-2 text-black bg-white px-3 py-1.5 md:px-4 md:py-1.5 rounded-md hover:bg-neutral-200 transition-colors text-xs md:text-sm whitespace-nowrap"
+              className="flex items-center gap-1.5 text-black bg-white px-3 py-1.5 md:px-4 md:py-1.5 rounded-md hover:bg-neutral-200 transition-colors text-xs md:text-sm whitespace-nowrap"
             >
-              Get Started <span className="hidden sm:inline">Now ⟶</span>
+              Get Started<span className="hidden sm:inline">Now ⟶</span>
             </Link>
           </nav>
         </header>
