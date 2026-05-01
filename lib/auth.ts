@@ -4,6 +4,7 @@ import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { Resend } from "resend";
 
+// Initialize Resend
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const auth = betterAuth({
@@ -11,6 +12,10 @@ export const auth = betterAuth({
     provider: "pg",
     schema: schema,
   }),
+  session: {
+    expiresIn: 60 * 60 * 24 * 30,
+    updateAge: 60 * 60 * 24,
+  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
@@ -18,7 +23,7 @@ export const auth = betterAuth({
     sendResetPassword: async ({ user, url }: any) => {
       try {
         await resend.emails.send({
-          from: "Formix <noreply@formix.rikikashyap.dev>",
+          from: "Formix Website <noreply@formix.rikikashyap.dev>",
           to: user.email,
           subject: "Reset your Formix password",
           html: `
@@ -56,7 +61,7 @@ export const auth = betterAuth({
     sendVerificationEmail: async ({ user, url }: any) => {
       try {
         await resend.emails.send({
-          from: "Formix <noreply@formix.rikikashyap.dev>",
+          from: "Formix Website <noreply@formix.rikikashyap.dev>",
           to: user.email,
           subject: "Verify your Formix account",
           html: `
