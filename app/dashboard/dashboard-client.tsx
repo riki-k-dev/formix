@@ -101,7 +101,7 @@ export default function DashboardClient({
           </div>
         </div>
       ) : (
-        <div className="max-w-6xl mx-auto p-8 md:p-10 animate-in fade-in duration-300">
+        <div className="max-w-6xl mx-auto p-5 sm:p-8 md:p-10 animate-in fade-in duration-300">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div>
               <h1 className="text-3xl font-mono tracking-tight text-white mb-1">
@@ -112,10 +112,9 @@ export default function DashboardClient({
               </p>
             </div>
 
-            {/* Added Generate Button to Data View */}
             <button
               onClick={() => setIsModalOpen(true)}
-              className="px-4 py-2 bg-white text-black font-medium text-sm rounded-md hover:bg-neutral-200 transition-colors flex items-center gap-2 shrink-0"
+              className="px-4 py-2 bg-white text-black font-medium text-sm rounded-md hover:bg-neutral-200 transition-colors flex items-center justify-center gap-2 shrink-0"
             >
               <Sparkles size={16} />
               Generate New Form
@@ -172,7 +171,7 @@ export default function DashboardClient({
 
           {/* Recent Activity Section */}
           <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden">
-            <div className="px-6 py-5 border-b border-neutral-800 flex items-center gap-2 text-white font-medium">
+            <div className="px-5 sm:px-6 py-5 border-b border-neutral-800 flex items-center gap-2 text-white font-medium">
               <Clock size={18} className="text-neutral-400" />
               Recent Activity
             </div>
@@ -186,18 +185,18 @@ export default function DashboardClient({
                 recentSubmissions.map((sub) => (
                   <div
                     key={sub.id}
-                    className="px-6 py-4 flex items-center justify-between hover:bg-neutral-900/20 transition-colors"
+                    className="px-5 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-neutral-900/20 transition-colors"
                   >
-                    <div>
-                      <p className="text-sm text-neutral-200 font-medium mb-1">
+                    <div className="min-w-0">
+                      <p className="text-sm text-neutral-200 font-medium mb-0.5">
                         New submission received
                       </p>
-                      <p className="text-xs text-neutral-500">
+                      <p className="text-xs text-neutral-500 truncate">
                         Form:{" "}
                         <span className="text-neutral-400">{sub.formName}</span>
                       </p>
                     </div>
-                    <div className="text-xs text-neutral-500 font-mono">
+                    <div className="text-[11px] sm:text-xs text-neutral-500 font-mono shrink-0">
                       {new Date(sub.createdAt).toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",

@@ -67,7 +67,7 @@ export default function EditFormClient({
     const fieldName = schema.fields[index].label || "Field";
     const updatedFields = schema.fields.filter((_, i) => i !== index);
     setSchema({ ...schema, fields: updatedFields });
-    toast.success(`Removed "${fieldName}"`); // Modern Toast!
+    toast.success(`Removed "${fieldName}"`);
   };
 
   const addField = () => {
@@ -137,27 +137,29 @@ export default function EditFormClient({
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-8 animate-in fade-in duration-300">
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
+    <div className="max-w-4xl mx-auto p-5 sm:p-8 animate-in fade-in duration-300">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0">
           <button
             onClick={() => router.back()}
-            className="p-2 bg-neutral-900 border border-neutral-800 rounded-md hover:bg-neutral-800 transition-colors text-neutral-400"
+            className="mt-1 sm:mt-0 p-2 bg-neutral-900 border border-neutral-800 rounded-md hover:bg-neutral-800 transition-colors text-neutral-400 shrink-0 cursor-pointer"
           >
             <ArrowLeft size={18} />
           </button>
-          <div>
-            <h1 className="text-2xl font-mono tracking-tight text-white mb-1">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-mono tracking-tight text-white mb-1 truncate">
               Edit Form Schema
             </h1>
-            <p className="text-neutral-500 text-sm font-mono">ID: {formId}</p>
+            <p className="text-neutral-500 text-xs sm:text-sm font-mono truncate">
+              ID: {formId}
+            </p>
           </div>
         </div>
 
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="px-5 py-2.5 bg-white text-black font-medium text-sm rounded-md hover:bg-neutral-200 transition-colors flex items-center gap-2 disabled:opacity-50"
+          className="w-full sm:w-auto px-5 py-2.5 bg-white text-black font-medium text-sm rounded-md hover:bg-neutral-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 shrink-0 cursor-pointer"
         >
           {isSaving ? (
             <Loader2 size={16} className="animate-spin" />
@@ -168,13 +170,14 @@ export default function EditFormClient({
         </button>
       </div>
 
-      <div className="space-y-8">
-        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-6 space-y-4">
-          <h2 className="text-lg font-medium text-white border-b border-neutral-800 pb-3 mb-4">
+      <div className="space-y-6 sm:space-y-8">
+        {/* General Info */}
+        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-5 sm:p-6 space-y-4">
+          <h2 className="text-base sm:text-lg font-medium text-white border-b border-neutral-800 pb-3 mb-4">
             General Info
           </h2>
           <div>
-            <label className="block text-sm font-medium text-neutral-400 mb-1.5">
+            <label className="block text-xs sm:text-sm font-medium text-neutral-400 mb-1.5">
               Form Name
             </label>
             <input
@@ -185,7 +188,7 @@ export default function EditFormClient({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-400 mb-1.5">
+            <label className="block text-xs sm:text-sm font-medium text-neutral-400 mb-1.5">
               Description
             </label>
             <textarea
@@ -193,17 +196,20 @@ export default function EditFormClient({
               onChange={(e) =>
                 setSchema({ ...schema, description: e.target.value })
               }
-              className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-neutral-200 focus:outline-none focus:border-neutral-600 min-h-20"
+              className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-neutral-200 focus:outline-none focus:border-neutral-600 min-h-[80px]"
             />
           </div>
         </div>
 
-        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-6">
-          <div className="flex items-center justify-between border-b border-neutral-800 pb-3 mb-6">
-            <h2 className="text-lg font-medium text-white">Form Fields</h2>
+        {/* Form Fields */}
+        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-5 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-neutral-800 pb-4 mb-6 gap-3">
+            <h2 className="text-base sm:text-lg font-medium text-white">
+              Form Fields
+            </h2>
             <button
               onClick={addField}
-              className="px-3 py-1.5 bg-neutral-800 text-white text-xs font-medium rounded hover:bg-neutral-700 transition-colors flex items-center gap-1.5"
+              className="w-full sm:w-auto px-4 py-2 bg-neutral-800 text-white text-xs font-medium rounded hover:bg-neutral-700 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Plus size={14} /> Add Field
             </button>
@@ -212,18 +218,23 @@ export default function EditFormClient({
           <div className="space-y-4">
             {schema.fields.map((field, index) => (
               <div
-                key={`${field.name}_${index}`} // Added unique key for drag rendering
-                draggable // Enabled dragging
+                key={`${field.name}_${index}`}
+                draggable
                 onDragStart={() => handleDragStart(index)}
                 onDragOver={(e) => handleDragOver(e, index)}
                 onDragEnd={handleDragEnd}
-                className={`flex items-start gap-4 p-4 bg-neutral-900/50 border border-neutral-800 rounded-lg group hover:border-neutral-700 transition-colors ${draggedItemIndex === index ? "opacity-50 border-dashed border-neutral-500" : ""}`}
+                className={`flex items-start gap-3 sm:gap-4 p-4 bg-neutral-900/50 border border-neutral-800 rounded-lg group hover:border-neutral-700 transition-colors ${
+                  draggedItemIndex === index
+                    ? "opacity-50 border-dashed border-neutral-500"
+                    : ""
+                }`}
               >
-                <div className="pt-2 text-neutral-600 cursor-grab active:cursor-grabbing hover:text-neutral-400 transition-colors">
+                {/* Drag handle visible only on non-mobile screens */}
+                <div className="pt-2 text-neutral-600 cursor-grab active:cursor-grabbing hover:text-neutral-400 transition-colors shrink-0 hidden sm:block">
                   <GripVertical size={18} />
                 </div>
 
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs text-neutral-500 mb-1">
                       Field Label
@@ -253,8 +264,9 @@ export default function EditFormClient({
                     />
                   </div>
 
-                  <div className="flex items-center gap-4 md:col-span-2 mt-2">
-                    <div className="flex-1 max-w-50">
+                  {/* Settings row with wrapping */}
+                  <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 md:col-span-2 mt-1">
+                    <div className="flex-1 min-w-[120px]">
                       <select
                         value={field.type}
                         onChange={(e) =>
@@ -270,7 +282,7 @@ export default function EditFormClient({
                       </select>
                     </div>
 
-                    <label className="flex items-center gap-2 cursor-pointer text-sm text-neutral-300">
+                    <label className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm text-neutral-300 whitespace-nowrap">
                       <input
                         type="checkbox"
                         checked={field.required}
@@ -284,7 +296,7 @@ export default function EditFormClient({
 
                     <button
                       onClick={() => removeField(index)}
-                      className="ml-auto p-2 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
+                      className="ml-auto p-2 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors shrink-0 cursor-pointer"
                       title="Delete Field"
                     >
                       <Trash2 size={16} />

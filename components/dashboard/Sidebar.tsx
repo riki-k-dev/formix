@@ -16,6 +16,7 @@ import {
   CreditCard,
   Sparkles,
   ChevronRight,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -51,24 +52,88 @@ const accountLinks = [
 
 interface SidebarProps {
   isCollapsed: boolean;
+  isMobileOpen: boolean;
+  setIsMobileOpen: (value: boolean) => void;
 }
 
-export default function Sidebar({ isCollapsed }: SidebarProps) {
+export default function Sidebar({
+  isCollapsed,
+  isMobileOpen,
+  setIsMobileOpen,
+}: SidebarProps) {
   const pathname = usePathname();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const renderNavSection = (links: typeof navLinks, isMobileView: boolean) => (
+    <nav className="flex flex-col gap-1.5 w-full">
+      {links.map((link) => (
+        <Link
+          key={link.name}
+          href={link.href}
+          onClick={() => isMobileView && setIsMobileOpen(false)}
+          title={isCollapsed && !isMobileView ? link.name : undefined}
+          className={cn(
+            "flex items-center rounded-lg px-3 transition-colors group relative overflow-hidden h-10 w-full shrink-0",
+            pathname === link.href
+              ? "bg-neutral-800/60 text-neutral-200"
+              : "hover:bg-neutral-800/30 hover:text-neutral-300",
+          )}
+        >
+          <link.icon
+            size={18}
+            className={cn(
+              "shrink-0",
+              pathname === link.href
+                ? "text-neutral-200"
+                : "text-neutral-500 group-hover:text-neutral-300",
+            )}
+          />
+          <AnimatePresence initial={false}>
+            {(!isCollapsed || isMobileView) && (
+              <motion.span
+                initial={{ opacity: 0, width: 0, marginLeft: 0 }}
+                animate={{ opacity: 1, width: "auto", marginLeft: 12 }}
+                exit={{ opacity: 0, width: 0, marginLeft: 0 }}
+                transition={{ duration: 0.2 }}
+                className="whitespace-nowrap flex-1 overflow-hidden"
+              >
+                {link.name}
+              </motion.span>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence initial={false}>
+            {(!isCollapsed || isMobileView) && link.pro && (
+              <motion.span
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="absolute right-3 text-[9px] uppercase tracking-wider bg-neutral-800 border border-neutral-700 text-neutral-400 px-1 rounded-sm shrink-0"
+              >
+                Pro
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </Link>
+      ))}
+    </nav>
+  );
+
   return (
     <>
+      {/* DESKTOP SIDEBAR */}
       <motion.aside
         initial={false}
         animate={{ width: isCollapsed ? 68 : 256 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="h-screen bg-[#0a0a0a] border-r border-neutral-800 flex flex-col text-sm text-neutral-400 font-medium overflow-hidden shrink-0 z-20"
+        className="hidden md:flex h-screen bg-[#0a0a0a] border-r border-neutral-800 flex-col text-sm text-neutral-400 font-medium overflow-hidden shrink-0 z-20"
       >
-        {/* Header */}
         <div className="h-16 flex items-center px-4 border-b border-neutral-800 shrink-0 overflow-hidden w-full">
           <div className="flex items-center whitespace-nowrap w-full">
-            <div className="border-zinc-800 border rounded-lg p-1 flex items-center justify-center shrink-0 w-9 h-9">
+            <Link
+              href="/"
+              className="border-zinc-800 border rounded-lg p-1 flex items-center justify-center shrink-0 w-9 h-9"
+            >
               <Image
                 src="/i2-t4.png"
                 alt="Formix Logo"
@@ -77,8 +142,7 @@ export default function Sidebar({ isCollapsed }: SidebarProps) {
                 className="shrink-0 object-contain rounded-md"
                 priority
               />
-            </div>
-
+            </Link>
             <AnimatePresence initial={false}>
               {!isCollapsed && (
                 <motion.div
@@ -100,160 +164,14 @@ export default function Sidebar({ isCollapsed }: SidebarProps) {
           </div>
         </div>
 
-        {/* Main Nav */}
         <div className="flex-1 overflow-y-auto py-6 flex flex-col gap-6 custom-scrollbar px-3 overflow-x-hidden">
-          {/* Top Links */}
-          <nav className="flex flex-col gap-1.5 w-full">
-            {navLinks.map((link) => (
-              <Link
-                key={link.name}
-                href={link.href}
-                title={isCollapsed ? link.name : undefined}
-                className={cn(
-                  "flex items-center rounded-lg px-3 transition-colors group relative overflow-hidden h-10 w-full shrink-0",
-                  pathname === link.href
-                    ? "bg-neutral-800/60 text-neutral-200"
-                    : "hover:bg-neutral-800/30 hover:text-neutral-300",
-                )}
-              >
-                <link.icon
-                  size={18}
-                  className={cn(
-                    "shrink-0",
-                    pathname === link.href
-                      ? "text-neutral-200"
-                      : "text-neutral-500 group-hover:text-neutral-300",
-                  )}
-                />
-                <AnimatePresence initial={false}>
-                  {!isCollapsed && (
-                    <motion.span
-                      initial={{ opacity: 0, width: 0, marginLeft: 0 }}
-                      animate={{ opacity: 1, width: "auto", marginLeft: 12 }}
-                      exit={{ opacity: 0, width: 0, marginLeft: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="whitespace-nowrap flex-1 overflow-hidden"
-                    >
-                      {link.name}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-
-                <AnimatePresence initial={false}>
-                  {!isCollapsed && link.pro && (
-                    <motion.span
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      className="absolute right-3 text-[9px] uppercase tracking-wider bg-neutral-800 border border-neutral-700 text-neutral-400 px-1 rounded-sm shrink-0"
-                    >
-                      Pro
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </Link>
-            ))}
-          </nav>
-
+          {renderNavSection(navLinks, false)}
           <div className="h-px w-full bg-neutral-800/50"></div>
-
-          {/* Middle Links */}
-          <nav className="flex flex-col gap-1.5 w-full">
-            {bottomLinks.map((link) => (
-              <Link
-                key={link.name}
-                href={link.href}
-                title={isCollapsed ? link.name : undefined}
-                className={cn(
-                  "flex items-center rounded-lg px-3 transition-colors group relative overflow-hidden h-10 w-full shrink-0",
-                  pathname === link.href
-                    ? "bg-neutral-800/60 text-neutral-200"
-                    : "hover:bg-neutral-800/30 hover:text-neutral-300",
-                )}
-              >
-                <link.icon
-                  size={18}
-                  className={cn(
-                    "shrink-0",
-                    pathname === link.href
-                      ? "text-neutral-200"
-                      : "text-neutral-500 group-hover:text-neutral-300",
-                  )}
-                />
-                <AnimatePresence initial={false}>
-                  {!isCollapsed && (
-                    <motion.span
-                      initial={{ opacity: 0, width: 0, marginLeft: 0 }}
-                      animate={{ opacity: 1, width: "auto", marginLeft: 12 }}
-                      exit={{ opacity: 0, width: 0, marginLeft: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="whitespace-nowrap flex-1 overflow-hidden"
-                    >
-                      {link.name}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-
-                <AnimatePresence initial={false}>
-                  {!isCollapsed && link.pro && (
-                    <motion.span
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      className="absolute right-3 text-[9px] uppercase tracking-wider bg-neutral-800 border border-neutral-700 text-neutral-400 px-1 rounded-sm shrink-0"
-                    >
-                      Pro
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </Link>
-            ))}
-          </nav>
-
+          {renderNavSection(bottomLinks, false)}
           <div className="h-px w-full bg-neutral-800/50"></div>
-
-          {/* Bottom Links */}
-          <nav className="flex flex-col gap-1.5 w-full">
-            {accountLinks.map((link) => (
-              <Link
-                key={link.name}
-                href={link.href}
-                title={isCollapsed ? link.name : undefined}
-                className={cn(
-                  "flex items-center rounded-lg px-3 transition-colors group relative overflow-hidden h-10 w-full shrink-0",
-                  pathname === link.href
-                    ? "bg-neutral-800/60 text-neutral-200"
-                    : "hover:bg-neutral-800/30 hover:text-neutral-300",
-                )}
-              >
-                <link.icon
-                  size={18}
-                  className={cn(
-                    "shrink-0",
-                    pathname === link.href
-                      ? "text-neutral-200"
-                      : "text-neutral-500 group-hover:text-neutral-300",
-                  )}
-                />
-                <AnimatePresence initial={false}>
-                  {!isCollapsed && (
-                    <motion.span
-                      initial={{ opacity: 0, width: 0, marginLeft: 0 }}
-                      animate={{ opacity: 1, width: "auto", marginLeft: 12 }}
-                      exit={{ opacity: 0, width: 0, marginLeft: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="whitespace-nowrap overflow-hidden"
-                    >
-                      {link.name}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </Link>
-            ))}
-          </nav>
+          {renderNavSection(accountLinks, false)}
         </div>
 
-        {/* Footer / Smart CTA Card */}
         <div className="border-t border-neutral-800 shrink-0 p-3 w-full">
           <button
             onClick={() => setIsModalOpen(true)}
@@ -263,14 +181,12 @@ export default function Sidebar({ isCollapsed }: SidebarProps) {
             {!isCollapsed && (
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent -translate-x-full group-hover:translate-x-[100%] transition-transform duration-1000 ease-in-out z-0"></div>
             )}
-
             <div className="relative z-10 flex items-center shrink-0">
               <Sparkles
                 size={18}
                 className="text-amber-400 group-hover:text-amber-300 transition-colors"
               />
             </div>
-
             <AnimatePresence initial={false}>
               {!isCollapsed && (
                 <motion.div
@@ -298,6 +214,77 @@ export default function Sidebar({ isCollapsed }: SidebarProps) {
           </button>
         </div>
       </motion.aside>
+
+      {/* MOBILE SIDEBAR OVERLAY */}
+      <AnimatePresence>
+        {isMobileOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+            />
+            <motion.aside
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+              className="fixed top-0 left-0 h-[100dvh] w-64 bg-[#0a0a0a] border-r border-neutral-800 flex flex-col text-sm text-neutral-400 font-medium z-50 md:hidden shadow-2xl"
+            >
+              <div className="h-16 flex items-center justify-between px-4 border-b border-neutral-800 shrink-0 w-full">
+                <div className="flex items-center">
+                  <Link
+                    href="/"
+                    onClick={() => setIsMobileOpen(false)}
+                    className="border-zinc-800 border rounded-lg p-1 flex items-center justify-center shrink-0 w-9 h-9"
+                  >
+                    <Image
+                      src="/i2-t4.png"
+                      alt="Formix Logo"
+                      width={26}
+                      height={26}
+                      className="shrink-0 object-contain rounded-md"
+                      priority
+                    />
+                  </Link>
+                  <span className="text-neutral-200 font-bold text-lg tracking-tight ml-3">
+                    Formix
+                  </span>
+                </div>
+                <button
+                  onClick={() => setIsMobileOpen(false)}
+                  className="text-neutral-500 hover:text-white transition-colors p-1"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto py-6 flex flex-col gap-6 px-3">
+                {renderNavSection(navLinks, true)}
+                <div className="h-px w-full bg-neutral-800/50"></div>
+                {renderNavSection(bottomLinks, true)}
+                <div className="h-px w-full bg-neutral-800/50"></div>
+                {renderNavSection(accountLinks, true)}
+              </div>
+
+              <div className="border-t border-neutral-800 shrink-0 p-3 w-full bg-[#0a0a0a]">
+                <button
+                  onClick={() => {
+                    setIsModalOpen(true);
+                    setIsMobileOpen(false);
+                  }}
+                  className="w-full py-3 bg-neutral-900 border border-neutral-800 rounded-xl flex items-center justify-center gap-2 text-white font-medium shadow-lg"
+                >
+                  <Sparkles size={16} className="text-amber-400" /> Generate
+                  Form
+                </button>
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
 
       <GenerateFormModal
         isOpen={isModalOpen}

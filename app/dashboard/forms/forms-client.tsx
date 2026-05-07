@@ -105,7 +105,6 @@ export default function FormsClient({
     } catch (error) {
       console.error(error);
       toast.error("Failed to change status. Reverting.");
-      // Revert the optimistic update on error
       setFormsList(
         formsList.map((f) =>
           f.id === formId ? { ...f, status: currentStatus } : f,
@@ -224,7 +223,7 @@ export default function FormsClient({
                         activeDropdown === form.id ? null : form.id,
                       )
                     }
-                    className="text-neutral-500 hover:text-neutral-300 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-neutral-800 cursor-pointer"
+                    className="text-neutral-500 hover:text-neutral-300 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-neutral-800 cursor-pointer"
                   >
                     <MoreHorizontal size={18} />
                   </button>

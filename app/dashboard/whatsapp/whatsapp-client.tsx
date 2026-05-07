@@ -173,7 +173,7 @@ export default function WhatsAppFlowsClient({
 
   return (
     <>
-      <div className="max-w-6xl mx-auto p-8 md:p-10">
+      <div className="max-w-6xl mx-auto p-5 sm:p-8 md:p-10">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -197,7 +197,7 @@ export default function WhatsAppFlowsClient({
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
           <div className="lg:col-span-1 space-y-4">
             <div className="flex items-center justify-between mb-4 relative z-20">
               <h2 className="text-sm font-medium text-neutral-300">
@@ -316,16 +316,16 @@ export default function WhatsAppFlowsClient({
             </div>
           </div>
 
-          <div className="lg:col-span-2" style={{ height: "520px" }}>
+          <div className="lg:col-span-2 h-[550px] lg:h-[600px] mt-6 lg:mt-0">
             {activeFlow ? (
               <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl h-full flex flex-col overflow-hidden">
-                <div className="px-5 py-4 border-b border-neutral-800 bg-neutral-900/40 flex items-center justify-between shrink-0">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center border border-neutral-700">
+                <div className="px-4 py-3 md:px-5 md:py-4 border-b border-neutral-800 bg-neutral-900/40 flex items-center justify-between shrink-0 gap-3">
+                  <div className="flex items-center gap-2.5 md:gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center border border-neutral-700 shrink-0">
                       <MessageSquare size={14} className="text-neutral-300" />
                     </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-neutral-200">
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-medium text-neutral-200 truncate">
                         {activeFlow.formName} Bot
                       </h3>
                       <p className="text-xs text-neutral-500 flex items-center gap-1">
@@ -333,8 +333,8 @@ export default function WhatsAppFlowsClient({
                           size={10}
                           className={
                             activeFlow.status === "active"
-                              ? "text-green-500"
-                              : "text-neutral-500"
+                              ? "text-green-500 shrink-0"
+                              : "text-neutral-500 shrink-0"
                           }
                         />
                         {activeFlow.status === "active" ? "Online" : "Offline"}
@@ -342,29 +342,34 @@ export default function WhatsAppFlowsClient({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 md:gap-3 shrink-0">
                     <button
                       onClick={() =>
                         handleToggleStatus(activeFlow.id, activeFlow.status)
                       }
                       disabled={isProcessing}
-                      className="text-xs font-medium text-neutral-400 hover:text-neutral-200 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-neutral-900 border border-neutral-800 cursor-pointer disabled:opacity-50"
+                      className="text-xs font-medium text-neutral-400 hover:text-neutral-200 transition-colors flex items-center gap-1.5 px-2.5 py-1.5 md:px-3 md:py-1.5 rounded-md bg-neutral-900 border border-neutral-800 cursor-pointer disabled:opacity-50"
                     >
                       {isProcessing && !flowToDelete ? (
-                        <Loader2 size={12} className="animate-spin" />
+                        <Loader2 size={12} className="animate-spin shrink-0" />
                       ) : (
                         <Power
                           size={12}
                           className={
                             activeFlow.status === "active"
-                              ? "text-red-400"
-                              : "text-green-400"
+                              ? "text-red-400 shrink-0"
+                              : "text-green-400 shrink-0"
                           }
                         />
                       )}
-                      {activeFlow.status === "active"
-                        ? "Disable Flow"
-                        : "Enable Flow"}
+                      <span className="hidden sm:inline">
+                        {activeFlow.status === "active"
+                          ? "Disable Flow"
+                          : "Enable Flow"}
+                      </span>
+                      <span className="sm:hidden">
+                        {activeFlow.status === "active" ? "Disable" : "Enable"}
+                      </span>
                     </button>
                     <div className="relative" ref={dropdownRef}>
                       <button
@@ -406,7 +411,7 @@ export default function WhatsAppFlowsClient({
                 <WhatsAppSimulator activeFlow={activeFlow} />
               </div>
             ) : (
-              <div className="bg-[#0a0a0a] border border-neutral-800 border-dashed rounded-xl h-full flex flex-col items-center justify-center text-neutral-500">
+              <div className="bg-[#0a0a0a] border border-neutral-800 border-dashed rounded-xl h-full flex flex-col items-center justify-center text-neutral-500 p-6 text-center">
                 <MessageSquare size={32} className="mb-4 opacity-50" />
                 <p>Select a flow to view details</p>
               </div>

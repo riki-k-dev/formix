@@ -239,7 +239,7 @@ export default function SubmissionsClient({
                         </span>
                       </td>
                       <td className="px-5 py-4 text-right">
-                        <div className="flex items-center justify-end gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center justify-end gap-4 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             className="text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer"
                             title="View Raw JSON"
