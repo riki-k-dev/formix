@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { forms, submissions, apiKeys, activities } from "@/db/schema";
+import { forms, submissions, apiKeys, activities, user } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import crypto from "crypto";
 import { triggerIntegrations } from "@/lib/integrations";
 import { submissionRateLimit } from "@/lib/ratelimit";
+import { sendSubmissionNotificationEmail } from "@/lib/email";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -127,7 +128,23 @@ export async function POST(
       type: "success",
     });
 
+    // 1. Trigger external webhooks & integrations
     await triggerIntegrations(formRecord, submissionId, submissionData, "api");
+
+    // 2. Fetch User & Send Email Notification if enabled
+    const formOwner = await db.query.user.findFirst({
+      where: eq(user.id, formRecord.userId),
+    });
+
+    if (formOwner?.emailNotifications && formOwner.email) {
+      sendSubmissionNotificationEmail(
+        formOwner.email,
+        formOwner.name,
+        formRecord.name,
+        submissionData,
+        "API/Web",
+      );
+    }
 
     return NextResponse.json(
       { success: true, message: "Submission successful", submissionId },

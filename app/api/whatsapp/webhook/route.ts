@@ -6,9 +6,11 @@ import {
   forms,
   submissions,
   activities,
+  user,
 } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { triggerIntegrations } from "@/lib/integrations";
+import { sendSubmissionNotificationEmail } from "@/lib/email";
 
 type FormSchema = {
   fields: Array<{
@@ -277,8 +279,23 @@ export async function POST(req: Request) {
                       "whatsapp",
                     );
 
+                    // SEND EMAIL NOTIFICATION HERE
+                    const formOwner = await db.query.user.findFirst({
+                      where: eq(user.id, formRecord.userId),
+                    });
+
+                    if (formOwner?.emailNotifications && formOwner.email) {
+                      sendSubmissionNotificationEmail(
+                        formOwner.email,
+                        formOwner.name,
+                        formRecord.name,
+                        updatedData,
+                        "WhatsApp",
+                      );
+                    }
+
                     console.log(
-                      "🎉 FORM COMPLETED! Saved to DB & Triggered Integrations.",
+                      "🎉 FORM COMPLETED! Saved to DB, Triggered Integrations & Sent Email.",
                     );
                   } catch (err) {
                     console.error("Failed to trigger integrations/save:", err);
