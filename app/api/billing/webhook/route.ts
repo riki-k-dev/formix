@@ -38,7 +38,10 @@ export async function POST(req: Request) {
       }
     }
 
-    if (body.event === "subscription.canceled") {
+    if (
+      body.event === "subscription.cancelled" ||
+      body.event === "subscription.canceled"
+    ) {
       const payload = body.data;
       const userId = payload.metadata?.userId;
 
