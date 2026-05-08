@@ -10,7 +10,7 @@ export async function POST(req: Request) {
 
     console.log("🔔 Dodo Webhook Received. Event:", body.event);
 
-    // 1. Upgrade or New Subscription logic
+    // 1. Upgrade Logic
     if (
       body.event === "payment.succeeded" ||
       body.event === "subscription.active" ||
@@ -20,10 +20,17 @@ export async function POST(req: Request) {
 
       const userId =
         payload.metadata?.userId || payload.customer?.metadata?.userId;
+      const customerEmail = payload.customer?.email;
 
-      console.log("🔍 Extracting userId from webhook:", userId);
+      console.log(
+        "🔍 Webhook Extracted -> UserID:",
+        userId,
+        "| Email:",
+        customerEmail,
+      );
 
       if (userId) {
+        // Update by ID
         await db
           .update(user)
           .set({
@@ -34,17 +41,26 @@ export async function POST(req: Request) {
             updatedAt: new Date(),
           })
           .where(eq(user.id, userId));
-
-        console.log(`✅ Database Update Success for User: ${userId}`);
+        console.log(`✅ DB Update Success (by ID) for: ${userId}`);
+      } else if (customerEmail) {
+        // Update by Email
+        await db
+          .update(user)
+          .set({
+            plan: "pro",
+            dodoCustomerId:
+              payload.customer_id || payload.customer?.customer_id,
+            subscriptionStatus: "active",
+            updatedAt: new Date(),
+          })
+          .where(eq(user.email, customerEmail));
+        console.log(`✅ DB Update Success (by EMAIL) for: ${customerEmail}`);
       } else {
-        console.error(
-          "❌ Webhook Error: No userId found in payload metadata. Full payload:",
-          JSON.stringify(payload),
-        );
+        console.error("❌ Webhook Error: Neither userId nor email found!");
       }
     }
 
-    // 2. Cancellation or Downgrade logic
+    // 2. Cancellation Logic
     if (
       body.event === "subscription.canceled" ||
       body.event === "subscription.cancelled"
@@ -52,6 +68,7 @@ export async function POST(req: Request) {
       const payload = body.data;
       const userId =
         payload.metadata?.userId || payload.customer?.metadata?.userId;
+      const customerEmail = payload.customer?.email;
 
       if (userId) {
         await db
@@ -62,17 +79,21 @@ export async function POST(req: Request) {
             updatedAt: new Date(),
           })
           .where(eq(user.id, userId));
-
-        console.log(`⚠️ User ${userId} downgraded to STARTER.`);
+      } else if (customerEmail) {
+        await db
+          .update(user)
+          .set({
+            plan: "starter",
+            subscriptionStatus: "canceled",
+            updatedAt: new Date(),
+          })
+          .where(eq(user.email, customerEmail));
       }
     }
 
     return NextResponse.json({ received: true }, { status: 200 });
   } catch (error) {
     console.error("Webhook Handler Error:", error);
-    return NextResponse.json(
-      { error: "Webhook processing failed" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Webhook failed" }, { status: 500 });
   }
 }
