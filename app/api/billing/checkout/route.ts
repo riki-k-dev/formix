@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 export async function POST() {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
+
     if (!session || !session.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -38,6 +39,9 @@ export async function POST() {
         customer: {
           email: session.user.email,
           name: session.user.name || "Formix User",
+        },
+        metadata: {
+          userId: session.user.id,
         },
         return_url: `${appUrl}/dashboard/billing?success=true`,
       }),
