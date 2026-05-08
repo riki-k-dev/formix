@@ -10,15 +10,21 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-const mockInvoices = [
-  { id: "INV-2026-001", date: "Mar 01, 2026", amount: "$0.00", status: "Paid" },
-  { id: "INV-2026-002", date: "Feb 01, 2026", amount: "$0.00", status: "Paid" },
-];
+type DodoPayment = {
+  payment_id: string;
+  amount: number;
+  created_at: string;
+  status: string;
+};
 
 export default function BillingClient({
   currentPlan,
+  billingHistory,
+  portalUrl,
 }: {
   currentPlan: string;
+  billingHistory: DodoPayment[];
+  portalUrl: string;
 }) {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -220,14 +226,21 @@ export default function BillingClient({
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() =>
-                  toast.info("Customer portal integration coming soon!")
-                }
-                className="text-xs text-neutral-400 hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
+
+              <a
+                href={portalUrl || "#"}
+                target={portalUrl ? "_blank" : "_self"}
+                onClick={(e) => {
+                  if (!portalUrl) {
+                    e.preventDefault();
+                    toast.info("Upgrade to Pro to manage payment methods.");
+                  }
+                }}
+                className={`text-xs flex items-center gap-1 transition-colors ${portalUrl ? "text-neutral-400 hover:text-white cursor-pointer" : "text-neutral-600 cursor-not-allowed"}`}
               >
                 Manage in Dodo Portal <ExternalLink size={12} />
-              </button>
+              </a>
+
               <p className="text-[10px] text-neutral-600 mt-4 border-t border-neutral-800 pt-3">
                 Secure payments processed by Dodo Payments.
               </p>
@@ -239,26 +252,33 @@ export default function BillingClient({
               Billing History
             </h2>
             <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden">
-              <div className="divide-y divide-neutral-800">
-                {currentPlan === "pro" ? (
-                  mockInvoices.map((invoice) => (
+              <div className="divide-y divide-neutral-800 max-h-[300px] overflow-y-auto">
+                {billingHistory.length > 0 ? (
+                  billingHistory.map((invoice: DodoPayment, index: number) => (
                     <div
-                      key={invoice.id}
-                      className="p-4 flex items-center justify-between hover:bg-neutral-900/30 transition-colors group cursor-pointer"
+                      key={invoice.payment_id || index}
+                      className="p-4 flex items-center justify-between hover:bg-neutral-900/30 transition-colors group"
                     >
                       <div className="flex items-center gap-3">
                         <FileText size={16} className="text-neutral-500" />
                         <div>
                           <p className="text-xs text-neutral-300 font-medium">
-                            {invoice.amount}
+                            ₹{(invoice.amount / 100).toFixed(2)}
                           </p>
                           <p className="text-[10px] text-neutral-500 font-mono">
-                            {invoice.date}
+                            {new Date(invoice.created_at).toLocaleDateString(
+                              "en-IN",
+                              {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              },
+                            )}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="text-[10px] bg-neutral-800 text-neutral-400 px-2 py-0.5 rounded">
+                        <span className="text-[10px] bg-neutral-800 text-neutral-400 px-2 py-0.5 rounded capitalize">
                           {invoice.status}
                         </span>
                       </div>
