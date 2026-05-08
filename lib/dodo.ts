@@ -12,8 +12,7 @@ interface DodoHistoryResponse {
 }
 
 interface DodoPortalResponse {
-  url?: string;
-  portal_url?: string;
+  link?: string;
 }
 
 export async function getDodoBillingData(customerId: string) {
@@ -43,19 +42,19 @@ export async function getDodoBillingData(customerId: string) {
 
     // 2. Fetch Portal URL Safely
     const portalRes = await fetch(
-      `https://test.dodopayments.com/customer-portal-sessions`,
+      `https://test.dodopayments.com/customers/${customerId}/customer-portal/session`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${apiKey}`,
         },
-        body: JSON.stringify({ customer_id: customerId }),
+        body: JSON.stringify({}),
         cache: "no-store",
       },
     );
 
-    let portalData: DodoPortalResponse = { url: "" };
+    let portalData: DodoPortalResponse = { link: "" };
 
     if (portalRes.ok) {
       portalData = (await portalRes.json()) as DodoPortalResponse;
@@ -68,7 +67,7 @@ export async function getDodoBillingData(customerId: string) {
 
     return {
       history: Array.isArray(rawHistory) ? rawHistory : [],
-      portalUrl: portalData.url || portalData.portal_url || "",
+      portalUrl: portalData.link || "",
     };
   } catch (error) {
     console.error("❌ Dodo API Fetch Exception:", error);
