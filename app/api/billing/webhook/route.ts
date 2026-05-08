@@ -10,6 +10,7 @@ export async function POST(req: Request) {
 
     console.log("🔔 Dodo Webhook Received. Event:", body.event);
 
+    // 1. Upgrade or New Subscription logic
     if (
       body.event === "payment.succeeded" ||
       body.event === "subscription.active" ||
@@ -17,7 +18,10 @@ export async function POST(req: Request) {
     ) {
       const payload = body.data;
 
-      const userId = payload.metadata?.userId;
+      const userId =
+        payload.metadata?.userId || payload.customer?.metadata?.userId;
+
+      console.log("🔍 Extracting userId from webhook:", userId);
 
       if (userId) {
         await db
@@ -27,23 +31,27 @@ export async function POST(req: Request) {
             dodoCustomerId:
               payload.customer_id || payload.customer?.customer_id,
             subscriptionStatus: "active",
-            // updated at
             updatedAt: new Date(),
           })
           .where(eq(user.id, userId));
 
-        console.log(`✅ User ${userId} successfully upgraded to PRO!`);
+        console.log(`✅ Database Update Success for User: ${userId}`);
       } else {
-        console.error("❌ Webhook Error: No userId found in metadata");
+        console.error(
+          "❌ Webhook Error: No userId found in payload metadata. Full payload:",
+          JSON.stringify(payload),
+        );
       }
     }
 
+    // 2. Cancellation or Downgrade logic
     if (
-      body.event === "subscription.cancelled" ||
-      body.event === "subscription.canceled"
+      body.event === "subscription.canceled" ||
+      body.event === "subscription.cancelled"
     ) {
       const payload = body.data;
-      const userId = payload.metadata?.userId;
+      const userId =
+        payload.metadata?.userId || payload.customer?.metadata?.userId;
 
       if (userId) {
         await db
