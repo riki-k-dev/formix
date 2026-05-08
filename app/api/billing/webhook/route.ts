@@ -8,13 +8,15 @@ export async function POST(req: Request) {
     const rawBody = await req.text();
     const body = JSON.parse(rawBody);
 
-    console.log("🔔 Dodo Webhook Received. Event:", body.event);
+    const eventType = body.type;
+
+    console.log("🔔 Dodo Webhook Received. Type:", eventType);
 
     // 1. Upgrade Logic
     if (
-      body.event === "payment.succeeded" ||
-      body.event === "subscription.active" ||
-      body.event === "checkout_session.completed"
+      eventType === "payment.succeeded" ||
+      eventType === "subscription.active" ||
+      eventType === "checkout_session.completed"
     ) {
       const payload = body.data;
 
@@ -30,7 +32,6 @@ export async function POST(req: Request) {
       );
 
       if (userId) {
-        // Update by ID
         await db
           .update(user)
           .set({
@@ -43,7 +44,6 @@ export async function POST(req: Request) {
           .where(eq(user.id, userId));
         console.log(`✅ DB Update Success (by ID) for: ${userId}`);
       } else if (customerEmail) {
-        // Update by Email
         await db
           .update(user)
           .set({
@@ -62,8 +62,8 @@ export async function POST(req: Request) {
 
     // 2. Cancellation Logic
     if (
-      body.event === "subscription.canceled" ||
-      body.event === "subscription.cancelled"
+      eventType === "subscription.canceled" ||
+      eventType === "subscription.cancelled"
     ) {
       const payload = body.data;
       const userId =
