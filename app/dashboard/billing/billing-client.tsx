@@ -233,7 +233,13 @@ export default function BillingClient({
                 onClick={(e) => {
                   if (!portalUrl) {
                     e.preventDefault();
-                    toast.info("Upgrade to Pro to manage payment methods.");
+                    if (currentPlan === "pro") {
+                      toast.error(
+                        "Portal access denied. Check your Dodo API Key permissions.",
+                      );
+                    } else {
+                      toast.info("Upgrade to Pro to manage payment methods.");
+                    }
                   }
                 }}
                 className={`text-xs flex items-center gap-1 transition-colors ${portalUrl ? "text-neutral-400 hover:text-white cursor-pointer" : "text-neutral-600 cursor-not-allowed"}`}
@@ -254,36 +260,43 @@ export default function BillingClient({
             <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden">
               <div className="divide-y divide-neutral-800 max-h-[300px] overflow-y-auto">
                 {billingHistory.length > 0 ? (
-                  billingHistory.map((invoice: DodoPayment, index: number) => (
-                    <div
-                      key={invoice.payment_id || index}
-                      className="p-4 flex items-center justify-between hover:bg-neutral-900/30 transition-colors group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <FileText size={16} className="text-neutral-500" />
-                        <div>
-                          <p className="text-xs text-neutral-300 font-medium">
-                            ₹{(invoice.amount / 100).toFixed(2)}
-                          </p>
-                          <p className="text-[10px] text-neutral-500 font-mono">
-                            {new Date(invoice.created_at).toLocaleDateString(
-                              "en-IN",
-                              {
-                                year: "numeric",
-                                month: "short",
-                                day: "numeric",
-                              },
-                            )}
-                          </p>
+                  billingHistory.map((invoice: DodoPayment, index: number) => {
+                    const displayAmount =
+                      typeof invoice.amount === "number"
+                        ? `₹${(invoice.amount / 100).toFixed(2)}`
+                        : "$12.00"; // Fallback price
+
+                    return (
+                      <div
+                        key={invoice.payment_id || index}
+                        className="p-4 flex items-center justify-between hover:bg-neutral-900/30 transition-colors group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <FileText size={16} className="text-neutral-500" />
+                          <div>
+                            <p className="text-xs text-neutral-300 font-medium">
+                              {displayAmount}
+                            </p>
+                            <p className="text-[10px] text-neutral-500 font-mono">
+                              {new Date(invoice.created_at).toLocaleDateString(
+                                "en-IN",
+                                {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                },
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] bg-neutral-800 text-neutral-400 px-2 py-0.5 rounded capitalize">
+                            {invoice.status}
+                          </span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-[10px] bg-neutral-800 text-neutral-400 px-2 py-0.5 rounded capitalize">
-                          {invoice.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div className="p-6 text-center text-sm text-neutral-500">
                     No billing history available.

@@ -1,4 +1,3 @@
-// Dodo Payments ke responses ka strict TypeScript Type
 export type DodoPayment = {
   payment_id: string;
   amount: number;
@@ -17,7 +16,6 @@ interface DodoPortalResponse {
   portal_url?: string;
 }
 
-// 'export' lagana zaroori hai taaki page.tsx isko import kar sake
 export async function getDodoBillingData(customerId: string) {
   const apiKey = process.env.DODO_API_KEY;
   if (!apiKey || !customerId) return { history: [], portalUrl: "" };
@@ -31,12 +29,11 @@ export async function getDodoBillingData(customerId: string) {
       {
         headers: { Authorization: `Bearer ${apiKey}` },
         cache: "no-store",
-      }
+      },
     );
 
-    // Yahan humne 'any' hata kar apna strict Type laga diya
     let historyData: DodoHistoryResponse = { items: [] };
-    
+
     if (historyRes.ok) {
       historyData = (await historyRes.json()) as DodoHistoryResponse;
     } else {
@@ -55,12 +52,11 @@ export async function getDodoBillingData(customerId: string) {
         },
         body: JSON.stringify({ customer_id: customerId }),
         cache: "no-store",
-      }
+      },
     );
 
-    // Yahan bhi 'any' hata kar strict Type laga diya
     let portalData: DodoPortalResponse = { url: "" };
-    
+
     if (portalRes.ok) {
       portalData = (await portalRes.json()) as DodoPortalResponse;
     } else {
