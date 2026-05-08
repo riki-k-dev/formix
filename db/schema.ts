@@ -22,6 +22,13 @@ export const user = pgTable("user", {
     .$onUpdate(() => new Date()),
   emailNotifications: boolean("email_notifications").default(true),
   marketingEmails: boolean("marketing_emails").default(false),
+
+  // NEW BILLING FIELDS
+  plan: text("plan").default("starter").notNull(),
+  dodoCustomerId: text("dodo_customer_id"),
+  subscriptionId: text("subscription_id"),
+  subscriptionStatus: text("subscription_status").default("inactive"),
+  currentPeriodEnd: timestamp("current_period_end"),
 });
 
 export const session = pgTable("session", {
