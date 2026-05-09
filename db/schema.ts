@@ -27,6 +27,10 @@ export const user = pgTable("user", {
   aiGenerationsCount: integer("ai_generations_count").default(0).notNull(),
   submissionsCount: integer("submissions_count").default(0).notNull(),
   apiRequestsCount: integer("api_requests_count").default(0).notNull(),
+
+  // Email preferences
+  emailNotifications: boolean("email_notifications").default(true),
+  marketingEmails: boolean("marketing_emails").default(false),
 });
 
 export const session = pgTable("session", {
