@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { activities } from "@/db/schema";
+import { activities, user } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { headers } from "next/headers";
 
@@ -9,9 +9,13 @@ export async function GET() {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session || !session.user) {
-      return NextResponse.json({ hasUnread: false }, { status: 401 });
+      return NextResponse.json(
+        { hasUnread: false, plan: "starter" },
+        { status: 401 },
+      );
     }
 
+    // Unread check
     const unreadRecords = await db
       .select({ id: activities.id })
       .from(activities)
@@ -20,9 +24,21 @@ export async function GET() {
       )
       .limit(1);
 
-    return NextResponse.json({ hasUnread: unreadRecords.length > 0 });
+    // Plan check
+    const dbUser = await db.query.user.findFirst({
+      where: eq(user.id, session.user.id),
+      columns: { plan: true },
+    });
+
+    return NextResponse.json({
+      hasUnread: unreadRecords.length > 0,
+      plan: dbUser?.plan || "starter",
+    });
   } catch (error) {
-    console.error("Failed to fetch unread status:", error);
-    return NextResponse.json({ hasUnread: false }, { status: 500 });
+    console.error("Failed to fetch unread status & plan:", error);
+    return NextResponse.json(
+      { hasUnread: false, plan: "starter" },
+      { status: 500 },
+    );
   }
 }
