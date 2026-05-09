@@ -38,7 +38,6 @@ export async function POST(req: Request) {
             plan: "pro",
             dodoCustomerId:
               payload.customer_id || payload.customer?.customer_id,
-            subscriptionStatus: "active",
             updatedAt: new Date(),
           })
           .where(eq(user.id, userId));
@@ -50,7 +49,6 @@ export async function POST(req: Request) {
             plan: "pro",
             dodoCustomerId:
               payload.customer_id || payload.customer?.customer_id,
-            subscriptionStatus: "active",
             updatedAt: new Date(),
           })
           .where(eq(user.email, customerEmail));
@@ -75,7 +73,6 @@ export async function POST(req: Request) {
           .update(user)
           .set({
             plan: "starter",
-            subscriptionStatus: "canceled",
             updatedAt: new Date(),
           })
           .where(eq(user.id, userId));
@@ -84,7 +81,6 @@ export async function POST(req: Request) {
           .update(user)
           .set({
             plan: "starter",
-            subscriptionStatus: "canceled",
             updatedAt: new Date(),
           })
           .where(eq(user.email, customerEmail));
