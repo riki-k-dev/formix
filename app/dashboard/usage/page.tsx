@@ -19,13 +19,23 @@ export default async function UsagePage() {
 
   const dbUser = await db.query.user.findFirst({
     where: eq(user.id, session.user.id),
+    columns: {
+      plan: true,
+      aiGenerationsCount: true,
+      submissionsCount: true,
+      apiRequestsCount: true,
+    },
   });
 
+  if (!dbUser) {
+    redirect("/login");
+  }
+
   const usageData = {
-    plan: dbUser?.plan || "starter",
-    aiGenerations: dbUser?.aiGenerationsCount || 0,
-    submissions: dbUser?.submissionsCount || 0,
-    apiRequests: dbUser?.apiRequestsCount || 0,
+    plan: dbUser.plan,
+    aiGenerations: dbUser.aiGenerationsCount,
+    submissions: dbUser.submissionsCount,
+    apiRequests: dbUser.apiRequestsCount,
   };
 
   return <UsageClient usageData={usageData} />;

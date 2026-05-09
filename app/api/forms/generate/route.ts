@@ -2,15 +2,14 @@ import { NextResponse } from "next/server";
 import Groq from "groq-sdk";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { forms } from "@/db/schema";
+import { forms, user } from "@/db/schema";
+import { eq, sql } from "drizzle-orm";
 import { headers } from "next/headers";
 import { generateFormValidator } from "@/lib/validators";
 import { aiGenerationRateLimit } from "@/lib/ratelimit";
 
 export async function POST(req: Request) {
   try {
-    console.log("1. Starting Groq AI generation process...");
-
     if (!process.env.GROQ_API_KEY) {
       throw new Error("GROQ_API_KEY is missing in .env");
     }
@@ -20,18 +19,32 @@ export async function POST(req: Request) {
     });
 
     if (!session || !session.user) {
-      console.log("Auth Failed: No active session found");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // CHECKPOST
+    const dbUser = await db.query.user.findFirst({
+      where: eq(user.id, session.user.id),
+      columns: { plan: true, aiGenerationsCount: true },
+    });
+
+    if (!dbUser)
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+
+    if (dbUser.plan === "starter" && dbUser.aiGenerationsCount >= 3) {
       return NextResponse.json(
-        { error: "Unauthorized - Please login again" },
-        { status: 401 },
+        {
+          error:
+            "AI generation limit reached for Starter plan. Please upgrade to Pro.",
+        },
+        { status: 403 },
       );
     }
 
+    // RATELIMIT
     const { success, limit, reset, remaining } =
       await aiGenerationRateLimit.limit(session.user.id);
-
     if (!success) {
-      console.warn(`Rate limit exceeded for user: ${session.user.id}`);
       return NextResponse.json(
         {
           error:
@@ -50,35 +63,31 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const parsedBody = generateFormValidator.safeParse(body);
-
     if (!parsedBody.success) {
-      const errorMessage = parsedBody.error.issues[0].message;
-      return NextResponse.json({ error: errorMessage }, { status: 400 });
+      return NextResponse.json(
+        { error: parsedBody.error.issues[0].message },
+        { status: 400 },
+      );
     }
 
     const { prompt } = parsedBody.data;
-
-    console.log("2. Prompt received:", prompt);
-    console.log("3. Prompting Groq (Llama-3)...");
-
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
     const systemInstruction = `
       You are an expert form schema architect for a headless form builder called Formix.
       Generate a structured JSON schema based on the user's prompt.
       You MUST return ONLY a valid JSON object. 
-      
       Required JSON Format:
       {
         "name": "A catchy, short name for the form",
-        "description": "A 1-2 sentence description of what the form is for",
+        "description": "A 1-2 sentence description",
         "fields": [
           {
             "name": "field_name_in_snake_case",
             "label": "Human Readable Label",
             "type": "text | email | number | textarea | select | radio | checkbox",
             "required": true,
-            "options": ["Option 1", "Option 2"] // Only include if type is select, radio, or checkbox
+            "options": ["Option 1", "Option 2"]
           }
         ]
       }
@@ -95,17 +104,11 @@ export async function POST(req: Request) {
     });
 
     const responseText = chatCompletion.choices[0]?.message?.content;
-
-    if (!responseText) {
-      throw new Error("Groq returned an empty response.");
-    }
-
-    console.log("4. AI Response received. Parsing JSON...");
+    if (!responseText) throw new Error("Groq returned an empty response.");
 
     const parsedSchema = JSON.parse(responseText);
     const formId = `frm_${crypto.randomUUID().replace(/-/g, "").substring(0, 12)}`;
 
-    console.log("5. Saving to Neon Database...");
     const [newForm] = await db
       .insert(forms)
       .values({
@@ -120,14 +123,17 @@ export async function POST(req: Request) {
       })
       .returning();
 
-    console.log("6. Success! Form saved:", newForm.id);
+    // INCREMENT USAGE
+    await db
+      .update(user)
+      .set({ aiGenerationsCount: sql`${user.aiGenerationsCount} + 1` })
+      .where(eq(user.id, session.user.id));
 
     return NextResponse.json({ success: true, form: newForm });
   } catch (error: unknown) {
     const err = error as Error;
-    console.error("AI Generation Error Details:", err.message || err);
     return NextResponse.json(
-      { error: err.message || "Failed to generate form. Please try again." },
+      { error: err.message || "Failed to generate form." },
       { status: 500 },
     );
   }
