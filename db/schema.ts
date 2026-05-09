@@ -10,25 +10,23 @@ import {
 // CORE & AUTH TABLES (Better Auth)
 
 export const user = pgTable("user", {
+  // Standard Auth Columns
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
-  emailVerified: boolean("email_verified").notNull(),
+  emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .notNull()
-    .$onUpdate(() => new Date()),
-  emailNotifications: boolean("email_notifications").default(true),
-  marketingEmails: boolean("marketing_emails").default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 
-  // NEW BILLING FIELDS
+  // Billing & Subscription
   plan: text("plan").default("starter").notNull(),
   dodoCustomerId: text("dodo_customer_id"),
-  subscriptionId: text("subscription_id"),
-  subscriptionStatus: text("subscription_status").default("inactive"),
-  currentPeriodEnd: timestamp("current_period_end"),
+
+  // Usage tracking
+  aiGenerationsCount: integer("ai_generations_count").default(0).notNull(),
+  submissionsCount: integer("submissions_count").default(0).notNull(),
+  apiRequestsCount: integer("api_requests_count").default(0).notNull(),
 });
 
 export const session = pgTable("session", {
@@ -88,7 +86,7 @@ export const forms = pgTable("forms", {
     .references(() => user.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   description: text("description"),
-  schema: jsonb("schema").notNull(), // Upgraded to JSONB
+  schema: jsonb("schema").notNull(),
   status: text("status").default("active").notNull(),
   whatsappStatus: text("whatsapp_status").default("active").notNull(),
   submissionsCount: integer("submissions_count").default(0).notNull(),
@@ -107,7 +105,7 @@ export const submissions = pgTable("submissions", {
   formId: text("form_id")
     .notNull()
     .references(() => forms.id, { onDelete: "cascade" }),
-  data: jsonb("data").notNull(), // Upgraded to JSONB
+  data: jsonb("data").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
