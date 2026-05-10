@@ -18,7 +18,7 @@ export default function ImageSection() {
       {/* Image Box */}
       <div className="w-full max-w-300">
         <Image
-          src="/dash-3.png"
+          src="/dashboard-img.webp"
           alt="Dashboard"
           width={1200}
           height={800}

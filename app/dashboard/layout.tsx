@@ -9,6 +9,7 @@ import {
   Settings,
   LogOut,
   Loader2,
+  Menu,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -23,6 +24,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
@@ -71,22 +73,38 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen bg-[#0a0a0a] text-neutral-200 font-sans overflow-hidden">
-      {/* Passing plan to Sidebar */}
-      <Sidebar isCollapsed={isCollapsed} plan={plan} />
+      {/* Passing plan and mobile states to Sidebar */}
+      <Sidebar
+        isCollapsed={isCollapsed}
+        plan={plan}
+        isMobileOpen={isMobileOpen}
+        setIsMobileOpen={setIsMobileOpen}
+      />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-16 flex items-center justify-between px-6 border-b border-neutral-800 shrink-0">
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer"
-            title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-          >
-            {isCollapsed ? (
-              <PanelLeftOpen size={20} />
-            ) : (
-              <PanelLeftClose size={20} />
-            )}
-          </button>
+        <header className="h-16 flex items-center justify-between px-4 md:px-6 border-b border-neutral-800 shrink-0">
+          <div className="flex items-center gap-3">
+            {/* Mobile Menu Toggle */}
+            <button
+              onClick={() => setIsMobileOpen(true)}
+              className="md:hidden text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer"
+            >
+              <Menu size={22} />
+            </button>
+
+            {/* Desktop Collapse Toggle */}
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="hidden md:block text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer"
+              title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            >
+              {isCollapsed ? (
+                <PanelLeftOpen size={20} />
+              ) : (
+                <PanelLeftClose size={20} />
+              )}
+            </button>
+          </div>
 
           {/* Premium User Profile Dropdown */}
           <div className="relative">
