@@ -11,6 +11,7 @@ import {
 import { eq, and, desc } from "drizzle-orm";
 import { triggerIntegrations } from "@/lib/integrations";
 import { sendSubmissionNotificationEmail } from "@/lib/email";
+import crypto from "crypto";
 
 type FormSchema = {
   fields: Array<{
@@ -27,7 +28,7 @@ async function sendWhatsAppMessage(
   phoneId: string,
 ) {
   try {
-    const url = `https://graph.facebook.com/v19.0/${phoneId}/messages`;
+    const url = `https://graph.facebook.com/v20.0/${phoneId}/messages`;
 
     const payload = {
       messaging_product: "whatsapp",
@@ -39,6 +40,8 @@ async function sendWhatsAppMessage(
         body: text,
       },
     };
+
+    console.log(`[WA API] Sending message to ${to}...`);
 
     const response = await fetch(url, {
       method: "POST",
@@ -52,13 +55,14 @@ async function sendWhatsAppMessage(
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("[WhatsApp API Error]:", JSON.stringify(data, null, 2));
+      console.error("❌ [WhatsApp API ERROR]:", JSON.stringify(data, null, 2));
       return false;
     }
 
+    console.log("✅ [WA API] Message sent successfully!");
     return true;
   } catch (error) {
-    console.error("[WhatsApp API Fetch Error]:", error);
+    console.error("❌ [WhatsApp API Fetch Error]:", error);
     return false;
   }
 }
@@ -75,7 +79,10 @@ export async function GET(req: Request) {
         where: eq(whatsappConfigs.verifyToken, token),
       });
 
-      if (config) return new NextResponse(challenge, { status: 200 });
+      if (config) {
+        console.log("✅ Webhook Verified successfully!");
+        return new NextResponse(challenge, { status: 200 });
+      }
       return new NextResponse("Forbidden", { status: 403 });
     }
     return new NextResponse("Bad Request", { status: 400 });
@@ -89,6 +96,11 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
+    console.log(
+      "🔥 [WEBHOOK HIT] Received Payload:",
+      JSON.stringify(body, null, 2),
+    );
+
     if (body.object === "whatsapp_business_account") {
       for (const entry of body.entry) {
         for (const change of entry.changes) {
@@ -100,13 +112,26 @@ export async function POST(req: Request) {
             const fromNumber = message.from;
             const msgBody = message.text?.body;
 
-            if (!msgBody) continue;
+            if (!msgBody) {
+              console.log("⚠️ Ignored non-text message");
+              continue;
+            }
+
+            console.log(
+              `📩 Message from ${fromNumber} to ${phoneNumberId}: "${msgBody}"`,
+            );
 
             const config = await db.query.whatsappConfigs.findFirst({
               where: eq(whatsappConfigs.phoneNumberId, phoneNumberId),
             });
 
-            if (!config) continue;
+            if (!config) {
+              console.log(
+                "❌ No matching WhatsApp config found in DB for phone ID:",
+                phoneNumberId,
+              );
+              continue;
+            }
 
             const activeSession = await db.query.whatsappSessions.findFirst({
               where: and(
@@ -117,6 +142,8 @@ export async function POST(req: Request) {
             });
 
             if (!activeSession) {
+              console.log("🆕 No active session. Starting new flow...");
+
               let selectedFormId = null;
               const refMatch =
                 msgBody.match(/\[ref:(frm_[a-zA-Z0-9]+)\]/i) ||
@@ -124,6 +151,9 @@ export async function POST(req: Request) {
 
               if (refMatch && refMatch[1]) {
                 selectedFormId = refMatch[1];
+                console.log(
+                  `🔍 Detected Form ID from message: ${selectedFormId}`,
+                );
               }
 
               const activeForms = await db.query.forms.findMany({
@@ -136,6 +166,9 @@ export async function POST(req: Request) {
               });
 
               if (activeForms.length === 0) {
+                console.log(
+                  "⚠️ No active WhatsApp forms available for this user.",
+                );
                 await sendWhatsAppMessage(
                   fromNumber,
                   "Sorry, this business is currently offline.",
@@ -146,7 +179,6 @@ export async function POST(req: Request) {
               }
 
               let formToStart = null;
-
               if (selectedFormId) {
                 formToStart = activeForms.find((f) => f.id === selectedFormId);
               } else if (activeForms.length === 1) {
@@ -154,6 +186,7 @@ export async function POST(req: Request) {
               }
 
               if (!formToStart) {
+                console.log("📋 Sending Form Menu...");
                 let menuText =
                   "👋 Hi! Welcome to our business.\nWe have multiple forms available. Please reply with the exact command below to start:\n\n";
                 activeForms.forEach((f) => {
@@ -192,6 +225,9 @@ export async function POST(req: Request) {
                 phoneNumberId,
               );
             } else {
+              console.log(
+                `⏳ Continuing active session for Form ID: ${activeSession.formId}`,
+              );
               const formRecord = await db.query.forms.findFirst({
                 where: eq(forms.id, activeSession.formId),
               });
@@ -206,7 +242,6 @@ export async function POST(req: Request) {
 
               if (currentStep < fields.length) {
                 const currentField = fields[currentStep];
-
                 const existingData =
                   (activeSession.collectedData as Record<string, unknown>) ||
                   {};
@@ -233,6 +268,7 @@ export async function POST(req: Request) {
                     phoneNumberId,
                   );
                 } else {
+                  console.log("🎉 Form completed via WhatsApp!");
                   await db
                     .update(whatsappSessions)
                     .set({
@@ -250,7 +286,7 @@ export async function POST(req: Request) {
                   );
 
                   try {
-                    const submissionId = crypto.randomUUID();
+                    const submissionId = `sub_${crypto.randomUUID().replace(/-/g, "").substring(0, 12)}`;
                     await db.insert(submissions).values({
                       id: submissionId,
                       formId: activeSession.formId,
@@ -279,7 +315,6 @@ export async function POST(req: Request) {
                       "whatsapp",
                     );
 
-                    // SEND EMAIL NOTIFICATION HERE
                     const formOwner = await db.query.user.findFirst({
                       where: eq(user.id, formRecord.userId),
                     });
@@ -291,12 +326,8 @@ export async function POST(req: Request) {
                         formRecord.name,
                         updatedData,
                         "WhatsApp",
-                      );
+                      ).catch((err) => console.error("Email error:", err));
                     }
-
-                    console.log(
-                      "🎉 FORM COMPLETED! Saved to DB, Triggered Integrations & Sent Email.",
-                    );
                   } catch (err) {
                     console.error("Failed to trigger integrations/save:", err);
                   }
