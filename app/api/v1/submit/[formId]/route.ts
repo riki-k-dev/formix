@@ -5,6 +5,7 @@ import { eq, sql } from "drizzle-orm";
 import crypto from "crypto";
 import { triggerIntegrations } from "@/lib/integrations";
 import { submissionRateLimit } from "@/lib/ratelimit";
+import { sendSubmissionNotificationEmail } from "@/lib/email";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -55,10 +56,16 @@ export async function POST(
       );
     }
 
-    // --- CHECKPOST ---
+    // CHECKPOST
     const formOwner = await db.query.user.findFirst({
       where: eq(user.id, formRecord.userId),
-      columns: { plan: true, submissionsCount: true },
+      columns: {
+        plan: true,
+        submissionsCount: true,
+        email: true,
+        name: true,
+        emailNotifications: true,
+      },
     });
 
     if (formOwner?.plan === "starter" && formOwner.submissionsCount >= 100) {
@@ -125,7 +132,7 @@ export async function POST(
       .set({ submissionsCount: sql`${forms.submissionsCount} + 1` })
       .where(eq(forms.id, formRecord.id));
 
-    // --- INCREMENT GLOBAL USAGE ---
+    // INCREMENT GLOBAL USAGE
     await db
       .update(user)
       .set({
@@ -143,6 +150,19 @@ export async function POST(
     });
 
     await triggerIntegrations(formRecord, submissionId, submissionData, "api");
+
+    // SEND EMAIL NOTIFICATION
+    if (formOwner?.emailNotifications && formOwner.email) {
+      sendSubmissionNotificationEmail(
+        formOwner.email,
+        formOwner.name || "Formix User",
+        formRecord.name,
+        submissionData,
+        "Public Link / API",
+      ).catch((err) =>
+        console.error("Failed to send email notification in submit API:", err),
+      );
+    }
 
     return NextResponse.json(
       { success: true, message: "Submission successful", submissionId },
