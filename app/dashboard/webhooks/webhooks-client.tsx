@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AddWebhookModal from "@/components/dashboard/AddWebhookModal";
+import UpgradeModal from "@/components/ui/UpgradeModal";
 import { useClipboard } from "@/hooks/use-clipboard";
 import { Input } from "@/components/ui/Input";
 import EmptyState from "@/components/ui/EmptyState";
@@ -29,12 +30,15 @@ type FormWithWebhook = {
 export default function ApiWebhooksClient({
   initialForms,
   apiKey,
+  isPro,
 }: {
   initialForms: FormWithWebhook[];
   apiKey: string;
+  isPro: boolean;
 }) {
   const [showLiveKey, setShowLiveKey] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const { copiedKey, copyToClipboard } = useClipboard();
 
   const [forms, setForms] = useState<FormWithWebhook[]>(initialForms);
@@ -113,7 +117,7 @@ export default function ApiWebhooksClient({
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           <div className="lg:col-span-2 space-y-10">
-            {/* API Keys Section */}
+            {/* API Keys Section (Open for Everyone) */}
             <section>
               <div className="flex items-center gap-2 mb-4">
                 <Key size={18} className="text-neutral-400" />
@@ -143,7 +147,7 @@ export default function ApiWebhooksClient({
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={() => setShowLiveKey(!showLiveKey)}
-                      className="p-2 text-neutral-500 hover:text-neutral-300 bg-neutral-900 border border-neutral-800 rounded-md transition-colors"
+                      className="p-2 text-neutral-500 hover:text-neutral-300 bg-neutral-900 border border-neutral-800 rounded-md transition-colors cursor-pointer"
                       title={showLiveKey ? "Hide Key" : "Reveal Key"}
                     >
                       {showLiveKey ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -152,7 +156,7 @@ export default function ApiWebhooksClient({
                       onClick={() =>
                         copyToClipboard(apiKey, "liveKey", "API Key copied!")
                       }
-                      className="p-2 text-neutral-500 hover:text-neutral-300 bg-neutral-900 border border-neutral-800 rounded-md transition-colors"
+                      className="p-2 text-neutral-500 hover:text-neutral-300 bg-neutral-900 border border-neutral-800 rounded-md transition-colors cursor-pointer"
                       title="Copy Key"
                     >
                       {copiedKey === "liveKey" ? (
@@ -198,7 +202,7 @@ export default function ApiWebhooksClient({
                     onClick={() =>
                       copyToClipboard(curlCommand, "curl", "Code copied!")
                     }
-                    className="absolute top-4 right-4 p-2 text-neutral-500 opacity-0 group-hover:opacity-100 bg-neutral-900 border border-neutral-800 rounded-md transition-all hover:text-neutral-300"
+                    className="absolute top-4 right-4 p-2 text-neutral-500 opacity-0 group-hover:opacity-100 bg-neutral-900 border border-neutral-800 rounded-md transition-all hover:text-neutral-300 cursor-pointer"
                   >
                     {copiedKey === "curl" ? (
                       <Check size={14} className="text-green-500" />
@@ -226,7 +230,7 @@ export default function ApiWebhooksClient({
             </section>
           </div>
 
-          {/* Right Column: Webhooks */}
+          {/* Right Column: Webhooks (Paywalled for Starter) */}
           <div className="space-y-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -234,10 +238,18 @@ export default function ApiWebhooksClient({
                 <h2 className="text-lg font-medium text-neutral-200">
                   Webhooks
                 </h2>
+                {/* Teaser Badge for Free users */}
+                {!isPro && (
+                  <span className="text-[9px] uppercase tracking-widest bg-amber-500/10 border border-amber-500/20 text-amber-500 px-1.5 py-0.5 rounded-sm font-bold ml-1">
+                    Pro
+                  </span>
+                )}
               </div>
               <button
-                onClick={() => setIsModalOpen(true)}
-                className="text-xs bg-white text-black px-2 py-1.5 rounded flex items-center gap-1 font-medium hover:bg-neutral-200 transition-colors"
+                onClick={() =>
+                  isPro ? setIsModalOpen(true) : setIsUpgradeModalOpen(true)
+                }
+                className="text-xs bg-white text-black px-2 py-1.5 rounded flex items-center gap-1 font-medium hover:bg-neutral-200 transition-colors cursor-pointer"
               >
                 <Plus size={14} /> Add
               </button>
@@ -274,11 +286,17 @@ export default function ApiWebhooksClient({
                         </span>
                       </div>
                       <button
-                        onClick={() =>
-                          editingId === form.id
-                            ? setEditingId(null)
-                            : setEditingId(form.id)
-                        }
+                        onClick={() => {
+                          if (!isPro) {
+                            setIsUpgradeModalOpen(true);
+                            return;
+                          }
+                          if (editingId === form.id) {
+                            setEditingId(null);
+                          } else {
+                            setEditingId(form.id);
+                          }
+                        }}
                         className="text-neutral-500 hover:text-neutral-300 transition-colors text-xs underline underline-offset-2 cursor-pointer"
                       >
                         {editingId === form.id ? "Cancel" : "Edit"}
@@ -330,9 +348,13 @@ export default function ApiWebhooksClient({
                             type="checkbox"
                             className="sr-only peer"
                             checked={form.hasWebhook}
-                            onChange={() =>
-                              handleToggleActive(form.id, form.hasWebhook)
-                            }
+                            onChange={() => {
+                              if (!isPro) {
+                                setIsUpgradeModalOpen(true);
+                                return;
+                              }
+                              handleToggleActive(form.id, form.hasWebhook);
+                            }}
                           />
                           <div className="w-9 h-5 bg-neutral-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
                         </label>
@@ -353,6 +375,13 @@ export default function ApiWebhooksClient({
       <AddWebhookModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+      />
+
+      {/* PRO PAYWALL MODAL */}
+      <UpgradeModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+        featureName="Webhooks"
       />
     </>
   );

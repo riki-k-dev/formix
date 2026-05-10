@@ -13,6 +13,7 @@ import { TbBrandZapier } from "react-icons/tb";
 
 import AddIntegrationModal from "@/components/dashboard/integrations/AddIntegrationModal";
 import ManageIntegrationModal from "@/components/dashboard/integrations/ManageIntegrationModal";
+import UpgradeModal from "@/components/ui/UpgradeModal";
 
 export type MappingType = {
   id: string;
@@ -77,6 +78,7 @@ export default function IntegrationsClient({
   availableForms,
   connectedProviderIds,
   connectionsByProvider,
+  isPro,
 }: {
   availableForms: { id: string; name: string }[];
   connectedProviderIds: string[];
@@ -84,6 +86,7 @@ export default function IntegrationsClient({
     string,
     { integrationId: string; credentials: string; mappings: MappingType[] }
   >;
+  isPro: boolean;
 }) {
   const [activeAddModal, setActiveAddModal] = useState<
     (typeof INTEGRATION_APPS)[0] | null
@@ -91,6 +94,7 @@ export default function IntegrationsClient({
   const [manageModalProvider, setManageModalProvider] = useState<
     (typeof INTEGRATION_APPS)[0] | null
   >(null);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
   return (
     <>
@@ -99,7 +103,7 @@ export default function IntegrationsClient({
           <h1 className="text-3xl font-mono tracking-tight text-white">
             Integrations
           </h1>
-          <span className="text-[10px] uppercase tracking-wider bg-neutral-800 border border-neutral-700 text-neutral-400 px-1.5 py-0.5 rounded-sm">
+          <span className="text-[10px] uppercase tracking-wider bg-amber-500/10 border border-amber-500/20 text-amber-500 px-1.5 py-0.5 rounded-sm font-bold">
             Pro
           </span>
         </div>
@@ -142,13 +146,19 @@ export default function IntegrationsClient({
                   {isConnected ? (
                     <div className="flex w-full items-center gap-3">
                       <button
-                        onClick={() => setActiveAddModal(app)}
+                        onClick={() => {
+                          if (!isPro) setIsUpgradeModalOpen(true);
+                          else setActiveAddModal(app);
+                        }}
                         className="flex-1 py-2 text-white border border-neutral-700 rounded-md text-xs font-semibold hover:bg-neutral-900 transition-colors flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <Plus size={14} /> Map Another
                       </button>
                       <button
-                        onClick={() => setManageModalProvider(app)}
+                        onClick={() => {
+                          if (!isPro) setIsUpgradeModalOpen(true);
+                          else setManageModalProvider(app);
+                        }}
                         className="flex-1 py-2 text-white rounded-md border border-neutral-700 text-xs font-semibold hover:bg-neutral-900 transition-colors flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <Pencil size={13} /> Edit Form
@@ -156,7 +166,14 @@ export default function IntegrationsClient({
                     </div>
                   ) : (
                     <button
-                      onClick={() => setActiveAddModal(app)}
+                      onClick={() => {
+                        // THE PAYWALL TRIGGER
+                        if (!isPro) {
+                          setIsUpgradeModalOpen(true);
+                        } else {
+                          setActiveAddModal(app);
+                        }
+                      }}
                       className="w-full py-2 bg-white text-black rounded-md text-xs font-semibold hover:bg-neutral-200 transition-colors flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <Plus size={14} /> Add Connection
@@ -181,6 +198,13 @@ export default function IntegrationsClient({
         onClose={() => setManageModalProvider(null)}
         activeApp={manageModalProvider}
         connectionsByProvider={connectionsByProvider}
+      />
+
+      {/* PRO PAYWALL MODAL */}
+      <UpgradeModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+        featureName="External Integrations"
       />
     </>
   );

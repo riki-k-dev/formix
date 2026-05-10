@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { forms, apiKeys } from "@/db/schema";
+import { forms, apiKeys, user } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -16,6 +16,14 @@ export default async function ApiWebhooksPage() {
     redirect("/login");
   }
 
+  // Fetch User Plan
+  const dbUser = await db.query.user.findFirst({
+    where: eq(user.id, session.user.id),
+    columns: { plan: true },
+  });
+  const isPro = dbUser?.plan === "pro";
+
+  // Fetch Forms
   const userForms = await db
     .select({
       id: forms.id,
@@ -27,6 +35,7 @@ export default async function ApiWebhooksPage() {
     .where(eq(forms.userId, session.user.id))
     .orderBy(desc(forms.createdAt));
 
+  // Fetch or Create API Key
   let userApiKeyRecord = await db.query.apiKeys.findFirst({
     where: eq(apiKeys.userId, session.user.id),
   });
@@ -48,6 +57,10 @@ export default async function ApiWebhooksPage() {
   }
 
   return (
-    <ApiWebhooksClient initialForms={userForms} apiKey={userApiKeyRecord.key} />
+    <ApiWebhooksClient
+      initialForms={userForms}
+      apiKey={userApiKeyRecord.key}
+      isPro={isPro}
+    />
   );
 }

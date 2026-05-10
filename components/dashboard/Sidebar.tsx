@@ -157,7 +157,7 @@ export default function Sidebar({
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.8 }}
-                      className="absolute right-3 text-[9px] uppercase tracking-wider bg-neutral-800 border border-neutral-700 text-neutral-400 px-1 rounded-sm shrink-0"
+                      className="absolute right-3 text-[9px] uppercase tracking-wider bg-amber-500/10 border border-amber-500/20 text-amber-500 px-1 rounded-sm shrink-0"
                     >
                       Pro
                     </motion.span>
@@ -212,7 +212,7 @@ export default function Sidebar({
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.8 }}
-                      className="absolute right-3 text-[9px] uppercase tracking-wider bg-neutral-800 border border-neutral-700 text-neutral-400 px-1 rounded-sm shrink-0"
+                      className="absolute right-3 text-[9px] uppercase tracking-wider bg-amber-500/10 border border-amber-500/20 text-amber-500 px-1 rounded-sm shrink-0"
                     >
                       Pro
                     </motion.span>

@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { forms, whatsappConfigs, submissions } from "@/db/schema";
+import { forms, whatsappConfigs, submissions, user } from "@/db/schema";
 import { eq, desc, inArray, count } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -18,6 +18,13 @@ export default async function WhatsAppFlowsPage() {
   if (!session || !session.user) {
     redirect("/login");
   }
+
+  // Fetch User Plan
+  const dbUser = await db.query.user.findFirst({
+    where: eq(user.id, session.user.id),
+    columns: { plan: true },
+  });
+  const isPro = dbUser?.plan === "pro";
 
   const userForms = await db.query.forms.findMany({
     where: eq(forms.userId, session.user.id),
@@ -108,6 +115,7 @@ export default async function WhatsAppFlowsPage() {
       initialFlows={flows}
       availableForms={availableForms.map((f) => ({ id: f.id, name: f.name }))}
       initialMetaConfig={initialMetaConfig}
+      isPro={isPro}
     />
   );
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { whatsappConfigs } from "@/db/schema";
+import { whatsappConfigs, user } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import crypto from "crypto";
@@ -14,6 +14,22 @@ export async function POST(req: Request) {
 
     if (!session || !session.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // PRO PLAN CHECK
+    const dbUser = await db.query.user.findFirst({
+      where: eq(user.id, session.user.id),
+      columns: { plan: true },
+    });
+
+    if (dbUser?.plan !== "pro") {
+      return NextResponse.json(
+        {
+          error:
+            "WhatsApp Cloud API access requires a Pro plan. Please upgrade.",
+        },
+        { status: 403 },
+      );
     }
 
     const body = await req.json();

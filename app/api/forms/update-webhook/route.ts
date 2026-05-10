@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { forms } from "@/db/schema";
+import { forms, user } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { headers } from "next/headers";
 
@@ -13,6 +13,19 @@ export async function POST(req: Request) {
 
     if (!session || !session.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // PRO PLAN CHECK
+    const dbUser = await db.query.user.findFirst({
+      where: eq(user.id, session.user.id),
+      columns: { plan: true },
+    });
+
+    if (dbUser?.plan !== "pro") {
+      return NextResponse.json(
+        { error: "Webhooks are a Pro feature. Please upgrade to unlock." },
+        { status: 403 },
+      );
     }
 
     const body = await req.json();

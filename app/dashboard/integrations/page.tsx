@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { forms, userIntegrations, formIntegrations } from "@/db/schema";
+import { forms, userIntegrations, formIntegrations, user } from "@/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -22,11 +22,20 @@ export default async function IntegrationsPage() {
 
   if (!session || !session.user) redirect("/login");
 
+  // Fetch User Plan
+  const dbUser = await db.query.user.findFirst({
+    where: eq(user.id, session.user.id),
+    columns: { plan: true },
+  });
+  const isPro = dbUser?.plan === "pro";
+
+  // Fetch Forms
   const userForms = await db.query.forms.findMany({
     where: eq(forms.userId, session.user.id),
     orderBy: [desc(forms.createdAt)],
   });
 
+  // Fetch Connections
   const detailedConnections = await db
     .select({
       provider: userIntegrations.provider,
@@ -89,6 +98,7 @@ export default async function IntegrationsPage() {
       availableForms={userForms.map((f) => ({ id: f.id, name: f.name }))}
       connectedProviderIds={connectedProviderIds}
       connectionsByProvider={connectionsByProvider}
+      isPro={isPro}
     />
   );
 }

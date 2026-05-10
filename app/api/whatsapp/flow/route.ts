@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { forms, whatsappConfigs, whatsappSessions } from "@/db/schema";
+import { forms, whatsappConfigs, user } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { headers } from "next/headers";
 import crypto from "crypto";
@@ -14,6 +14,19 @@ export async function POST(req: Request) {
 
     if (!session || !session.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // PRO PLAN CHECK
+    const dbUser = await db.query.user.findFirst({
+      where: eq(user.id, session.user.id),
+      columns: { plan: true },
+    });
+
+    if (dbUser?.plan !== "pro") {
+      return NextResponse.json(
+        { error: "WhatsApp Flows are a Pro feature. Please upgrade." },
+        { status: 403 },
+      );
     }
 
     const body = await req.json();
@@ -67,69 +80,6 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error("Create WA Flow Error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
-  }
-}
-
-export async function DELETE(req: Request) {
-  try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(req.url);
-    const formId = searchParams.get("formId");
-
-    if (!formId) {
-      return NextResponse.json(
-        { error: "Form ID is required" },
-        { status: 400 },
-      );
-    }
-
-    const formRecord = await db.query.forms.findFirst({
-      where: and(eq(forms.id, formId), eq(forms.userId, session.user.id)),
-    });
-
-    if (!formRecord) {
-      return NextResponse.json(
-        { error: "Form not found or access denied" },
-        { status: 403 },
-      );
-    }
-
-    await db
-      .update(forms)
-      .set({ hasWhatsapp: false, updatedAt: new Date() })
-      .where(eq(forms.id, formId));
-
-    await db
-      .update(whatsappConfigs)
-      .set({ activeFormId: null, updatedAt: new Date() })
-      .where(
-        and(
-          eq(whatsappConfigs.userId, session.user.id),
-          eq(whatsappConfigs.activeFormId, formId),
-        ),
-      );
-
-    await db
-      .delete(whatsappSessions)
-      .where(eq(whatsappSessions.formId, formId));
-
-    return NextResponse.json({
-      success: true,
-      message: "WhatsApp flow deleted successfully",
-    });
-  } catch (error) {
-    console.error("Delete WA Flow Error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },
