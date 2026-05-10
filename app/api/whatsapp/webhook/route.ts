@@ -96,16 +96,28 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    console.log(
-      "🔥 [WEBHOOK HIT] Received Payload:",
-      JSON.stringify(body, null, 2),
-    );
-
     if (body.object === "whatsapp_business_account") {
       for (const entry of body.entry) {
         for (const change of entry.changes) {
           const value = change.value;
 
+          // Handle Delivery Statuses & Errors from Meta
+          if (value.statuses && value.statuses.length > 0) {
+            const statusObj = value.statuses[0];
+            if (statusObj.status === "failed") {
+              console.error(
+                `🚨 [META DELIVERY FAILED] To: ${statusObj.recipient_id}. Reason:`,
+                JSON.stringify(statusObj.errors),
+              );
+            } else {
+              console.log(
+                `ℹ️ [Message Status] ID: ${statusObj.id} is now '${statusObj.status}'`,
+              );
+            }
+            continue;
+          }
+
+          // Handle Incoming User Messages
           if (value.messages && value.messages.length > 0) {
             const message = value.messages[0];
             const phoneNumberId = value.metadata.phone_number_id;
