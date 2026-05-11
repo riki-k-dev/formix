@@ -1,6 +1,9 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { Sparkles, Shield, Inbox, Info } from "lucide-react";
 import { toast } from "sonner";
+import { NotificationsTabSkeleton } from "./SettingsSkeletons";
 
 type Activity = {
   id: string;
@@ -12,6 +15,7 @@ type Activity = {
 };
 
 export default function NotificationsTab() {
+  const [isLoading, setIsLoading] = useState(true);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [marketingEmails, setMarketingEmails] = useState(false);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -24,6 +28,7 @@ export default function NotificationsTab() {
   }, []);
 
   const fetchData = async () => {
+    setIsLoading(true);
     try {
       const res = await fetch("/api/user/preferences");
       if (res.ok) {
@@ -34,6 +39,8 @@ export default function NotificationsTab() {
       }
     } catch (error) {
       console.error("Failed to fetch preferences", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -122,6 +129,10 @@ export default function NotificationsTab() {
         return "bg-blue-500/10";
     }
   };
+
+  if (isLoading) {
+    return <NotificationsTabSkeleton />;
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">

@@ -3,10 +3,28 @@
 import { useState, useEffect } from "react";
 import { User, Bell, LifeBuoy } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import ProfileTab from "@/components/dashboard/settings/ProfileTab";
-import NotificationsTab from "@/components/dashboard/settings/NotificationsTab";
-import HelpTab from "@/components/dashboard/settings/HelpTab";
+import dynamic from "next/dynamic";
 import DeleteAccountModal from "@/components/dashboard/settings/DeleteAccountModal";
+
+// Skeletons
+import {
+  ProfileTabSkeleton,
+  NotificationsTabSkeleton,
+  HelpTabSkeleton,
+} from "@/components/dashboard/settings/SettingsSkeletons";
+
+const ProfileTab = dynamic(
+  () => import("@/components/dashboard/settings/ProfileTab"),
+  { loading: () => <ProfileTabSkeleton /> },
+);
+const NotificationsTab = dynamic(
+  () => import("@/components/dashboard/settings/NotificationsTab"),
+  { loading: () => <NotificationsTabSkeleton /> },
+);
+const HelpTab = dynamic(
+  () => import("@/components/dashboard/settings/HelpTab"),
+  { loading: () => <HelpTabSkeleton /> },
+);
 
 type SessionUser = {
   id: string;
@@ -102,7 +120,7 @@ export default function SettingsClient({ user }: { user: SessionUser }) {
             </nav>
           </aside>
 
-          <div className="flex-1 min-h-125">
+          <div className="flex-1 min-h-[400px]">
             {activeTab === "profile" && (
               <ProfileTab
                 user={user}
