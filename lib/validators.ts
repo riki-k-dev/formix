@@ -19,6 +19,7 @@ export const formFieldValidator = z.object({
     "radio",
     "checkbox",
     "url",
+    "file",
   ]),
   required: z.boolean(),
   options: z.array(z.string()).optional(),

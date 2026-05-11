@@ -279,6 +279,9 @@ export default function EditFormClient({
                         <option value="email">Email</option>
                         <option value="number">Number</option>
                         <option value="select">Dropdown</option>
+                        <option value="radio">Radio Buttons</option>
+                        <option value="checkbox">Checkbox</option>
+                        <option value="file">File Upload</option>
                       </select>
                     </div>
 

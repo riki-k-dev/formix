@@ -85,7 +85,7 @@ export async function POST(req: Request) {
           {
             "name": "field_name_in_snake_case",
             "label": "Human Readable Label",
-            "type": "text | email | number | textarea | select | radio | checkbox",
+            "type": "text | email | number | textarea | select | radio | checkbox | file",
             "required": true,
             "options": ["Option 1", "Option 2"]
           }

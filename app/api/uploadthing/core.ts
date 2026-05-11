@@ -45,6 +45,18 @@ export const ourFileRouter = {
 
       return { uploadedBy: metadata.userId, url: file.url };
     }),
+
+  // Form attachment endpoint for public submissions
+  formAttachmentUploader: f({
+    blob: { maxFileSize: "8MB", maxFileCount: 1 },
+  })
+    .middleware(async () => {
+      return {};
+    })
+    .onUploadComplete(async ({ file }) => {
+      console.log("Form attachment uploaded:", file.url);
+      return { url: file.url };
+    }),
 } satisfies FileRouter;
 
 export type OurFileRouter = typeof ourFileRouter;

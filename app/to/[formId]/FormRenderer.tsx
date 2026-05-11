@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Loader2, ShieldCheck, UploadCloud } from "lucide-react";
+import { uploadFiles } from "@/lib/uploadthing";
 
 type FormField = {
   name: string;
@@ -13,7 +14,8 @@ type FormField = {
     | "textarea"
     | "select"
     | "radio"
-    | "checkbox";
+    | "checkbox"
+    | "file";
   required: boolean;
   options?: string[];
 };
@@ -32,6 +34,7 @@ export default function FormRenderer({
   schema: FormSchema;
 }) {
   const [formData, setFormData] = useState<Record<string, string>>({});
+  const [fileData, setFileData] = useState<Record<string, File>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -44,16 +47,38 @@ export default function FormRenderer({
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setFileData({ ...fileData, [e.target.name]: e.target.files[0] });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError("");
 
     try {
+      const finalFormData = { ...formData };
+
+      // 1. Upload files first if any exist
+      if (Object.keys(fileData).length > 0) {
+        for (const [fieldName, file] of Object.entries(fileData)) {
+          const uploadRes = await uploadFiles("formAttachmentUploader", {
+            files: [file],
+          });
+          if (uploadRes && uploadRes.length > 0) {
+            // Save the returned URL into the payload
+            finalFormData[fieldName] = uploadRes[0].url;
+          }
+        }
+      }
+
+      // 2. Submit entire payload to Formix API
       const res = await fetch(`/api/v1/submit/${formId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: formData }),
+        body: JSON.stringify({ data: finalFormData }),
       });
 
       const data = await res.json();
@@ -112,7 +137,7 @@ export default function FormRenderer({
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
           <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-lg flex items-center gap-2">
             <span>⚠️</span> {error}
@@ -120,7 +145,7 @@ export default function FormRenderer({
         )}
 
         {schema.fields?.map((field: FormField, idx: number) => (
-          <div key={idx} className="space-y-1.5">
+          <div key={idx} className="space-y-2">
             <label className="block text-sm font-medium text-neutral-300">
               {field.label}{" "}
               {field.required && <span className="text-red-400 ml-0.5">*</span>}
@@ -148,6 +173,55 @@ export default function FormRenderer({
                   </option>
                 ))}
               </select>
+            ) : field.type === "radio" ? (
+              <div className="space-y-2.5 pt-1">
+                {field.options?.map((opt, i) => (
+                  <label
+                    key={i}
+                    className="flex items-center gap-3 cursor-pointer group"
+                  >
+                    <input
+                      type="radio"
+                      name={field.name}
+                      value={opt}
+                      required={field.required}
+                      onChange={handleChange}
+                      className="w-4 h-4 border-neutral-700 bg-neutral-900 text-white focus:ring-white cursor-pointer accent-white"
+                    />
+                    <span className="text-sm text-neutral-400 group-hover:text-neutral-200 transition-colors">
+                      {opt}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            ) : field.type === "checkbox" ? (
+              <div className="flex items-center gap-3 pt-1 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  name={field.name}
+                  required={field.required}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      [field.name]: e.target.checked ? "Yes" : "No",
+                    })
+                  }
+                  className="w-4 h-4 rounded border-neutral-700 bg-neutral-900 text-white focus:ring-0 focus:ring-offset-0 cursor-pointer accent-white"
+                />
+                <span className="text-sm text-neutral-400 group-hover:text-neutral-200 transition-colors">
+                  Select to confirm
+                </span>
+              </div>
+            ) : field.type === "file" ? (
+              <div className="relative group">
+                <input
+                  type="file"
+                  name={field.name}
+                  required={field.required}
+                  onChange={handleFileChange}
+                  className="w-full bg-neutral-900 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-neutral-200 focus:outline-none file:mr-4 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-white file:text-black hover:file:bg-neutral-200 transition-all cursor-pointer"
+                />
+              </div>
             ) : (
               <input
                 type={
@@ -170,15 +244,18 @@ export default function FormRenderer({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-white text-black font-semibold py-2.5 rounded-lg mt-6 hover:bg-neutral-200 transition-colors flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-white/5"
+          className="w-full bg-white text-black font-semibold py-3 rounded-lg mt-8 hover:bg-neutral-200 transition-colors flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-white/5"
         >
           {isSubmitting ? (
             <>
               <Loader2 size={18} className="animate-spin" />
-              <span>Submitting...</span>
+              <span>Processing...</span>
             </>
           ) : (
-            "Submit Form"
+            <>
+              <UploadCloud size={18} />
+              <span>Submit Form</span>
+            </>
           )}
         </button>
       </form>
