@@ -141,18 +141,24 @@ export default function TemplatesClient({
         ))}
 
         {/* COMING SOON CARD */}
-        <div className="border border-dashed border-neutral-800 hover:border-neutral-600 rounded-xl p-5 flex flex-col justify-center items-center text-center group bg-[#0a0a0a] min-h-[22rem]">
-          <div className="w-12 h-12 rounded-lg bg-neutral-900 border border-neutral-800 flex items-center justify-center mb-6 shrink-0 group-hover:scale-105 transition-transform">
-            <Clock className="text-neutral-600" size={20} />
+        <div className="border border-dashed border-neutral-800 transition-colors rounded-xl p-5 flex flex-col group bg-[#0a0a0a]">
+          <div className="flex items-start justify-between mb-5">
+            <div className="w-10 h-10 rounded-lg bg-neutral-900/50 border border-neutral-800 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Clock className="text-neutral-600" size={18} />
+            </div>
           </div>
-          <h3 className="text-base font-medium text-neutral-400 mb-2 truncate">
-            More templates coming soon
-          </h3>
-          <p className="text-xs text-neutral-600 leading-relaxed max-w-[200px]">
-            We&apos;re building new templates for feedback, lead gen, and
-            internal HR needs. Stay tuned!
-          </p>
-          <div className="w-full py-2.5 bg-neutral-950 text-neutral-600 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 border border-neutral-800 mt-8">
+
+          <div className="flex flex-col flex-1 mb-6">
+            <h3 className="text-base font-medium text-neutral-400 mb-1.5">
+              More coming soon
+            </h3>
+            <p className="text-xs text-neutral-600 leading-relaxed">
+              We&apos;re building new templates for feedback, lead gen, and
+              internal HR needs. Stay tuned!
+            </p>
+          </div>
+
+          <div className="w-full py-2.5 bg-neutral-950 text-neutral-600 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 border border-neutral-800/50">
             Stay tuned
           </div>
         </div>
