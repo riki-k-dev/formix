@@ -203,7 +203,12 @@ export default function Sidebar({
                   transition={{ duration: 0.2 }}
                   className="flex items-center overflow-hidden"
                 >
-                  <span className="text-neutral-200 font-bold text-lg tracking-tight mr-14">
+                  <span
+                    className={cn(
+                      "text-neutral-200 font-bold text-lg tracking-tight",
+                      plan === "pro" ? "mr-19" : "mr-14",
+                    )}
+                  >
                     Formix
                   </span>
                   <span
