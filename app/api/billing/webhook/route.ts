@@ -58,31 +58,32 @@ export async function POST(req: Request) {
             payload.customer?.customer_id ||
             dbUser.dodoCustomerId,
           subscriptionEndDate: nextBillingDate,
-          cancelAtPeriodEnd: false, // Reset this just in case they resubscribed
+          cancelAtPeriodEnd: false,
           updatedAt: new Date(),
         })
         .where(eq(user.id, dbUser.id));
 
-      // Send Welcome Email only if they were just upgraded
       if (wasStarter && dbUser.email) {
         await sendWelcomeProEmail(dbUser.email, dbUser.name);
       }
     }
 
-    // 2. SUBSCRIPTION UPDATED OR CANCELLED
+    // 2. SUBSCRIPTION UPDATED OR CANCELLED (The Fix)
     if (
       eventType === "subscription.updated" ||
       eventType === "subscription.canceled" ||
       eventType === "subscription.cancelled"
     ) {
       const isCanceling =
-        payload.cancel_at_period_end === true ||
+        payload.cancel_at_next_billing_date === true ||
         payload.status === "canceled" ||
         payload.status === "cancelled" ||
-        eventType === "subscription.canceled";
+        eventType === "subscription.canceled" ||
+        eventType === "subscription.cancelled";
 
       const isRevoked =
-        payload.cancel_at_period_end === false && payload.status === "active";
+        payload.cancel_at_next_billing_date === false &&
+        payload.status === "active";
 
       if (isCanceling && !dbUser.cancelAtPeriodEnd) {
         await db
