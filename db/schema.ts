@@ -24,11 +24,13 @@ export const user = pgTable("user", {
   emailNotifications: boolean("email_notifications").default(true),
   marketingEmails: boolean("marketing_emails").default(false),
 
-  // Billing
+  // Billing & Subscription (UPDATED)
   plan: text("plan").default("starter").notNull(),
   dodoCustomerId: text("dodo_customer_id"),
+  subscriptionEndDate: timestamp("subscription_end_date"),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false).notNull(),
 
-  // USAGE TRACKING COLUMNS
+  // Usage Tracking
   aiGenerationsCount: integer("ai_generations_count").default(0).notNull(),
   submissionsCount: integer("submissions_count").default(0).notNull(),
   apiRequestsCount: integer("api_requests_count").default(0).notNull(),

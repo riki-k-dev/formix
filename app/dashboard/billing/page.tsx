@@ -25,6 +25,11 @@ export default async function BillingPage() {
   const currentPlan = dbUser?.plan || "starter";
   const dodoCustomerId = dbUser?.dodoCustomerId;
 
+  const subscriptionEndDate = dbUser?.subscriptionEndDate
+    ? dbUser.subscriptionEndDate.toISOString()
+    : null;
+  const cancelAtPeriodEnd = dbUser?.cancelAtPeriodEnd || false;
+
   let billingHistory: DodoPayment[] = [];
   let portalUrl = "";
 
@@ -39,6 +44,8 @@ export default async function BillingPage() {
       currentPlan={currentPlan}
       billingHistory={billingHistory}
       portalUrl={portalUrl}
+      subscriptionEndDate={subscriptionEndDate}
+      cancelAtPeriodEnd={cancelAtPeriodEnd}
     />
   );
 }

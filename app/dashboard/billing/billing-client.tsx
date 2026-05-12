@@ -7,6 +7,7 @@ import {
   FileText,
   ExternalLink,
   Loader2,
+  CalendarClock,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -21,10 +22,14 @@ export default function BillingClient({
   currentPlan,
   billingHistory,
   portalUrl,
+  subscriptionEndDate,
+  cancelAtPeriodEnd,
 }: {
   currentPlan: string;
   billingHistory: DodoPayment[];
   portalUrl: string;
+  subscriptionEndDate?: string | null;
+  cancelAtPeriodEnd?: boolean;
 }) {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -58,8 +63,16 @@ export default function BillingClient({
     }
   };
 
+  const formattedEndDate = subscriptionEndDate
+    ? new Date(subscriptionEndDate).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : null;
+
   return (
-    <div className="max-w-6xl mx-auto p-8 md:p-10">
+    <div className="max-w-6xl mx-auto p-8 md:p-10 animate-in fade-in duration-300">
       <div className="mb-10">
         <h1 className="text-3xl font-mono tracking-tight text-white mb-2">
           Billing
@@ -152,17 +165,42 @@ export default function BillingClient({
                 </div>
               )}
               {currentPlan === "pro" && (
-                <div className="absolute top-0 right-0 px-3 py-1 bg-amber-500/20 border-b border-l border-amber-500/30 text-amber-500 text-[10px] uppercase tracking-wider font-bold rounded-bl-lg">
-                  Active Plan
+                <div
+                  className={`absolute top-0 right-0 px-3 py-1 text-[10px] uppercase tracking-wider font-bold rounded-bl-lg border-b border-l ${cancelAtPeriodEnd ? "bg-red-500/20 border-red-500/30 text-red-400" : "bg-amber-500/20 border-amber-500/30 text-amber-500"}`}
+                >
+                  {cancelAtPeriodEnd ? "Cancels Soon" : "Active Plan"}
                 </div>
               )}
+
               <div className="p-6 flex justify-between items-start border-b border-neutral-800/50">
                 <div>
                   <h3 className="text-xl font-medium text-white mb-1">Pro</h3>
                   <p className="text-sm text-neutral-500">
                     For developers and teams scaling up.
                   </p>
+
+                  {/* DYNAMIC DATE RENDERING FOR PRO USERS */}
+                  {currentPlan === "pro" && formattedEndDate && (
+                    <div className="mt-3 flex items-center gap-1.5 font-mono">
+                      <CalendarClock
+                        size={14}
+                        className={
+                          cancelAtPeriodEnd
+                            ? "text-amber-500"
+                            : "text-green-500"
+                        }
+                      />
+                      <span
+                        className={`text-xs ${cancelAtPeriodEnd ? "text-amber-500/90" : "text-green-500/90"}`}
+                      >
+                        {cancelAtPeriodEnd
+                          ? `Cancels on ${formattedEndDate}`
+                          : `Renews on ${formattedEndDate}`}
+                      </span>
+                    </div>
+                  )}
                 </div>
+
                 <div className="text-right mt-1">
                   <span className="text-2xl font-mono text-white">$12</span>
                   <span className="text-sm text-neutral-500">/mo</span>
@@ -201,7 +239,9 @@ export default function BillingClient({
                     disabled
                     className="w-full sm:w-auto px-6 py-2.5 bg-neutral-800 text-neutral-400 font-medium text-sm rounded-md shrink-0 flex items-center justify-center gap-2 cursor-not-allowed"
                   >
-                    Current Plan
+                    {cancelAtPeriodEnd
+                      ? "Cancellation Pending"
+                      : "Current Plan"}
                   </button>
                 )}
               </div>
@@ -258,13 +298,13 @@ export default function BillingClient({
               Billing History
             </h2>
             <div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl overflow-hidden">
-              <div className="divide-y divide-neutral-800 max-h-[300px] overflow-y-auto">
+              <div className="divide-y divide-neutral-800 max-h-[300px] overflow-y-auto custom-scrollbar">
                 {billingHistory.length > 0 ? (
                   billingHistory.map((invoice: DodoPayment, index: number) => {
                     const displayAmount =
                       typeof invoice.amount === "number"
                         ? `₹${(invoice.amount / 100).toFixed(2)}`
-                        : "$12.00"; // Fallback price
+                        : "$12.00";
 
                     return (
                       <div
@@ -279,7 +319,7 @@ export default function BillingClient({
                             </p>
                             <p className="text-[10px] text-neutral-500 font-mono">
                               {new Date(invoice.created_at).toLocaleDateString(
-                                "en-IN",
+                                "en-US",
                                 {
                                   year: "numeric",
                                   month: "short",
