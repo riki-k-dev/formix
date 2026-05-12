@@ -10,6 +10,7 @@ import {
   CalendarClock,
 } from "lucide-react";
 import { toast } from "sonner";
+import { trackEvent } from "@/lib/analytics";
 
 type DodoPayment = {
   payment_id: string;
@@ -35,6 +36,13 @@ export default function BillingClient({
 
   const handleUpgrade = async () => {
     setIsLoading(true);
+
+    trackEvent("checkout_started", {
+      tier: "Pro",
+      price: 12,
+      payment_provider: "dodo_payments",
+    });
+
     try {
       const res = await fetch("/api/billing/checkout", {
         method: "POST",

@@ -19,6 +19,7 @@ import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import Grid from "@/components/landing/ui/Grid";
 import Separator from "@/components/landing/ui/Separator";
+import { trackEvent } from "@/lib/analytics";
 
 export default function LoginClient() {
   const router = useRouter();
@@ -126,6 +127,11 @@ export default function LoginClient() {
           setIsLoading(false);
           return;
         }
+
+        trackEvent("user_signed_up", {
+          method: "email",
+          user_role: "developer",
+        });
 
         setVerificationSent(true);
         setIsLoading(false);

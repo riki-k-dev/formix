@@ -4,6 +4,7 @@ import { useState } from "react";
 import { X, MessageSquare, Smartphone, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { trackEvent } from "@/lib/analytics";
 
 type AvailableForm = {
   id: string;
@@ -44,6 +45,12 @@ export default function NewWhatsAppFlowModal({
       if (!res.ok) throw new Error(data.error || "Failed to create flow");
 
       toast.success("WhatsApp flow connected successfully!");
+
+      trackEvent("whatsapp_bot_deployed", {
+        status: "success",
+        form_id: selectedFormId,
+      });
+
       router.refresh();
       onClose();
       setSelectedFormId("");

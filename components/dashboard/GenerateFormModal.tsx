@@ -10,6 +10,7 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 
 interface GenerateFormModalProps {
   isOpen: boolean;
@@ -75,6 +76,11 @@ export default function GenerateFormModal({
 
       setCurrentStep(loadingSteps.length);
       setIsDone(true);
+
+      trackEvent("form_generated_ai", {
+        form_type: "json_schema",
+        source: "modal_prompt",
+      });
 
       setTimeout(() => {
         router.refresh();
