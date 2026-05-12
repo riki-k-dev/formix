@@ -43,7 +43,6 @@ export async function POST(req: Request) {
       eventType === "subscription.active" ||
       eventType === "checkout_session.completed"
     ) {
-      // Fallback: Add 30 days if Dodo payload doesn't explicitly send next_billing_date
       const nextBillingDate = payload.next_billing_date
         ? new Date(payload.next_billing_date)
         : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
@@ -70,31 +69,49 @@ export async function POST(req: Request) {
       }
     }
 
-    // 2. SUBSCRIPTION CANCELLED
+    // 2. SUBSCRIPTION UPDATED OR CANCELLED
     if (
+      eventType === "subscription.updated" ||
       eventType === "subscription.canceled" ||
       eventType === "subscription.cancelled"
     ) {
-      // We don't downgrade immediately. We set cancelAtPeriodEnd = true.
-      await db
-        .update(user)
-        .set({
-          cancelAtPeriodEnd: true,
-          updatedAt: new Date(),
-        })
-        .where(eq(user.id, dbUser.id));
+      const isCanceling =
+        payload.cancel_at_period_end === true ||
+        payload.status === "canceled" ||
+        payload.status === "cancelled" ||
+        eventType === "subscription.canceled";
 
-      if (dbUser.email) {
-        // Formatting the date nicely for the email
-        const expiryDate = dbUser.subscriptionEndDate
-          ? dbUser.subscriptionEndDate.toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })
-          : "the end of your billing cycle";
+      const isRevoked =
+        payload.cancel_at_period_end === false && payload.status === "active";
 
-        await sendSubscriptionCancelledEmail(dbUser.email, expiryDate);
+      if (isCanceling && !dbUser.cancelAtPeriodEnd) {
+        await db
+          .update(user)
+          .set({
+            cancelAtPeriodEnd: true,
+            updatedAt: new Date(),
+          })
+          .where(eq(user.id, dbUser.id));
+
+        if (dbUser.email) {
+          const expiryDate = dbUser.subscriptionEndDate
+            ? dbUser.subscriptionEndDate.toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })
+            : "the end of your billing cycle";
+
+          await sendSubscriptionCancelledEmail(dbUser.email, expiryDate);
+        }
+      } else if (isRevoked && dbUser.cancelAtPeriodEnd) {
+        await db
+          .update(user)
+          .set({
+            cancelAtPeriodEnd: false,
+            updatedAt: new Date(),
+          })
+          .where(eq(user.id, dbUser.id));
       }
     }
 
