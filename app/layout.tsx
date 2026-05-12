@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { GoogleAnalytics } from "@next/third-parties/google";
+import { CSPostHogProvider } from "./providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,27 +38,9 @@ export const metadata: Metadata = {
     "Next.js forms",
     "React form infrastructure",
     "form automation",
-
-    // Real-world & Problem-Solving (Human-like searches)
     "create form API instantly",
-    "backend for HTML forms",
-    "collect form submissions without backend",
-    "how to save form data in Next.js",
     "no code form API endpoint",
-    "generate API endpoint for form",
-    "custom form backend setup",
-
-    // Use-Case Specific
-    "WhatsApp survey maker",
-    "collect data via WhatsApp bot",
-    "send form data to Google Sheets automatically",
-    "connect HTML form to Slack",
-    "JSON form schema generator",
-
-    // Competitor Alternatives (High conversion intent)
     "Typeform alternative for developers",
-    "Formspree alternative",
-    "headless Typeform",
   ],
   authors: [{ name: "Riki Kashyap", url: "https://rikikashyap.dev" }],
   creator: "Riki Kashyap",
@@ -91,13 +77,11 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
+  },
+  // Search Engine Verification Tags
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION,
+    yahoo: process.env.BING_SITE_VERIFICATION,
   },
 };
 
@@ -106,13 +90,21 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+
   return (
     <html lang="en" className="dark">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#050505] text-white`}
       >
-        {children}
-        <Toaster theme="dark" position="bottom-right" />
+        <CSPostHogProvider>
+          {children}
+          <Toaster theme="dark" position="bottom-right" />
+
+          <Analytics />
+          <SpeedInsights />
+          {gaId && <GoogleAnalytics gaId={gaId} />}
+        </CSPostHogProvider>
       </body>
     </html>
   );
