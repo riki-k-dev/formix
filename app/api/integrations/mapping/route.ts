@@ -21,6 +21,7 @@ export async function PATCH(req: Request) {
         { status: 400 },
       );
 
+    // STRICT RLS: Ensure mapping belongs to a form AND integration owned by the user
     const validMapping = await db
       .select({
         id: formIntegrations.id,
@@ -36,12 +37,16 @@ export async function PATCH(req: Request) {
         and(
           eq(formIntegrations.id, mappingId),
           eq(forms.userId, session.user.id),
+          eq(userIntegrations.userId, session.user.id),
         ),
       )
       .limit(1);
 
     if (validMapping.length === 0)
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Mapping not found or unauthorized" },
+        { status: 404 },
+      );
 
     const provider = validMapping[0].provider;
 
@@ -83,6 +88,7 @@ export async function DELETE(req: Request) {
     if (!mappingId)
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
 
+    // STRICT RLS
     const validMapping = await db
       .select({
         id: formIntegrations.id,
@@ -90,16 +96,24 @@ export async function DELETE(req: Request) {
       })
       .from(formIntegrations)
       .innerJoin(forms, eq(formIntegrations.formId, forms.id))
+      .innerJoin(
+        userIntegrations,
+        eq(formIntegrations.integrationId, userIntegrations.id),
+      )
       .where(
         and(
           eq(formIntegrations.id, mappingId),
           eq(forms.userId, session.user.id),
+          eq(userIntegrations.userId, session.user.id),
         ),
       )
       .limit(1);
 
     if (validMapping.length === 0)
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Mapping not found or unauthorized" },
+        { status: 404 },
+      );
 
     const integrationId = validMapping[0].integrationId;
 

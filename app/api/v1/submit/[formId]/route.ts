@@ -6,6 +6,7 @@ import crypto from "crypto";
 import { triggerIntegrations } from "@/lib/integrations";
 import { submissionRateLimit } from "@/lib/ratelimit";
 import { sendSubmissionNotificationEmail } from "@/lib/email";
+import { validateDynamicSubmission, type FormField } from "@/lib/validators";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -109,13 +110,36 @@ export async function POST(
     }
 
     const body = await req.json();
-    const submissionData = body.data || body;
-    if (!submissionData || Object.keys(submissionData).length === 0) {
+    const rawSubmissionData = body.data || body;
+
+    if (!rawSubmissionData || Object.keys(rawSubmissionData).length === 0) {
       return NextResponse.json(
         { error: "Submission data is empty" },
         { status: 400, headers: corsHeaders },
       );
     }
+
+    // DYNAMIC SCHEMA VALIDATION (Type-safe parsing)
+    const parsedSchema = formRecord.schema as { fields?: FormField[] };
+    const schemaFields = parsedSchema?.fields || [];
+    const validationResult = validateDynamicSubmission(
+      schemaFields,
+      rawSubmissionData,
+    );
+
+    if (!validationResult.success) {
+      // Return detailed validation errors from Zod
+      const errors = validationResult.error.issues
+        .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+        .join(", ");
+      return NextResponse.json(
+        { error: `Validation Error: ${errors}` },
+        { status: 400, headers: corsHeaders },
+      );
+    }
+
+    // Use the sanitized data (extra fields dropped, numbers parsed, etc.)
+    const sanitizedData = validationResult.data;
 
     const submissionId = `sub_${crypto.randomUUID().replace(/-/g, "").substring(0, 12)}`;
 
@@ -123,7 +147,7 @@ export async function POST(
     await db.insert(submissions).values({
       id: submissionId,
       formId: formRecord.id,
-      data: submissionData,
+      data: sanitizedData, // Saving strict, sanitized data
     });
 
     // Update Form internal count
@@ -149,7 +173,7 @@ export async function POST(
       type: "success",
     });
 
-    await triggerIntegrations(formRecord, submissionId, submissionData, "api");
+    await triggerIntegrations(formRecord, submissionId, sanitizedData, "api");
 
     // SEND EMAIL NOTIFICATION
     if (formOwner?.emailNotifications && formOwner.email) {
@@ -157,7 +181,7 @@ export async function POST(
         formOwner.email,
         formOwner.name || "Formix User",
         formRecord.name,
-        submissionData,
+        sanitizedData,
         "Public Link / API",
       ).catch((err) =>
         console.error("Failed to send email notification in submit API:", err),

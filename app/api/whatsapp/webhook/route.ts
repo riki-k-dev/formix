@@ -11,6 +11,7 @@ import {
 import { eq, and, desc } from "drizzle-orm";
 import { triggerIntegrations } from "@/lib/integrations";
 import { sendSubmissionNotificationEmail } from "@/lib/email";
+import { webhookRateLimit } from "@/lib/ratelimit";
 import crypto from "crypto";
 
 type FormSchema = {
@@ -88,12 +89,34 @@ export async function GET(req: Request) {
     return new NextResponse("Bad Request", { status: 400 });
   } catch (error) {
     console.error("Webhook GET Error:", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
+
+    return new NextResponse("Internal Server Error", {
+      status: 500,
+    });
   }
 }
 
 export async function POST(req: Request) {
   try {
+    // RATE LIMIT WEBHOOK ENDPOINT
+    const ip =
+      req.headers.get("x-forwarded-for") ||
+      req.headers.get("x-real-ip") ||
+      "meta_webhook_ip";
+
+    const { success } = await webhookRateLimit.limit(ip);
+
+    if (!success) {
+      console.warn(
+        `[Rate Limit Exceeded] Dropping webhook request from IP: ${ip}`,
+      );
+
+      // Return 200 so Meta doesn't disable webhook
+      return new NextResponse("EVENT_RECEIVED", {
+        status: 200,
+      });
+    }
+
     const body = await req.json();
 
     if (body.object === "whatsapp_business_account") {
@@ -156,7 +179,7 @@ export async function POST(req: Request) {
             if (!activeSession) {
               console.log("🆕 No active session. Starting new flow...");
 
-              let selectedFormId = null;
+              let selectedFormId: string | null = null;
               const refMatch =
                 msgBody.match(/\[ref:(frm_[a-zA-Z0-9]+)\]/i) ||
                 msgBody.match(/START\s+(frm_[a-zA-Z0-9]+)/i);
@@ -217,7 +240,10 @@ export async function POST(req: Request) {
               const schema = (formToStart.schema as FormSchema) || {
                 fields: [],
               };
-              if (!schema.fields || schema.fields.length === 0) continue;
+
+              if (!schema.fields || schema.fields.length === 0) {
+                continue;
+              }
 
               await db.insert(whatsappSessions).values({
                 formId: formToStart.id,
@@ -298,7 +324,11 @@ export async function POST(req: Request) {
                   );
 
                   try {
-                    const submissionId = `sub_${crypto.randomUUID().replace(/-/g, "").substring(0, 12)}`;
+                    const submissionId = `sub_${crypto
+                      .randomUUID()
+                      .replace(/-/g, "")
+                      .substring(0, 12)}`;
+
                     await db.insert(submissions).values({
                       id: submissionId,
                       formId: activeSession.formId,
@@ -338,7 +368,9 @@ export async function POST(req: Request) {
                         formRecord.name,
                         updatedData,
                         "WhatsApp",
-                      ).catch((err) => console.error("Email error:", err));
+                      ).catch((err: unknown) =>
+                        console.error("Email error:", err),
+                      );
                     }
                   } catch (err) {
                     console.error("Failed to trigger integrations/save:", err);
@@ -351,9 +383,14 @@ export async function POST(req: Request) {
       }
     }
 
-    return new NextResponse("EVENT_RECEIVED", { status: 200 });
+    return new NextResponse("EVENT_RECEIVED", {
+      status: 200,
+    });
   } catch (error) {
     console.error("Webhook POST Error:", error);
-    return new NextResponse("EVENT_RECEIVED", { status: 200 });
+
+    return new NextResponse("EVENT_RECEIVED", {
+      status: 200,
+    });
   }
 }

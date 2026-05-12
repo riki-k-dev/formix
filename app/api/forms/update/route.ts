@@ -5,6 +5,7 @@ import { forms } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { headers } from "next/headers";
 import { updateFormValidator } from "@/lib/validators";
+import { dashboardApiRateLimit } from "@/lib/ratelimit";
 
 export async function POST(req: Request) {
   try {
@@ -16,8 +17,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
+    // 1. DASHBOARD RATE LIMITING
+    const { success } = await dashboardApiRateLimit.limit(session.user.id);
+    if (!success) {
+      return NextResponse.json(
+        { error: "Too many actions performed. Please slow down." },
+        { status: 429 },
+      );
+    }
 
+    const body = await req.json();
     const parsedBody = updateFormValidator.safeParse(body);
 
     if (!parsedBody.success) {

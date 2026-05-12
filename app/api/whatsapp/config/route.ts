@@ -5,6 +5,7 @@ import { whatsappConfigs, user } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import crypto from "crypto";
+import { whatsappConfigValidator } from "@/lib/validators";
 
 export async function POST(req: Request) {
   try {
@@ -33,14 +34,17 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { phoneNumberId, accessToken, phoneNumber } = body;
 
-    if (!phoneNumberId || !accessToken) {
+    // Strict Server-Side Validation
+    const parsedBody = whatsappConfigValidator.safeParse(body);
+    if (!parsedBody.success) {
       return NextResponse.json(
-        { error: "Phone Number ID and Access Token are required" },
+        { error: parsedBody.error.issues[0].message },
         { status: 400 },
       );
     }
+
+    const { phoneNumberId, accessToken, phoneNumber } = parsedBody.data;
 
     const config = await db.query.whatsappConfigs.findFirst({
       where: eq(whatsappConfigs.userId, session.user.id),

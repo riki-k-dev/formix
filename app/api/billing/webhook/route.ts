@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { user } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import crypto from "crypto";
 import {
   sendWelcomeProEmail,
   sendSubscriptionCancelledEmail,
@@ -11,10 +12,43 @@ import {
 export async function POST(req: Request) {
   try {
     const rawBody = await req.text();
+
+    // 1. CRITICAL: Dodo Payments Signature Verification
+    const signature =
+      req.headers.get("webhook-signature") ||
+      req.headers.get("x-dodo-signature");
+    const webhookSecret = process.env.DODO_WEBHOOK_SECRET;
+
+    if (!signature || !webhookSecret) {
+      console.error("🚨 Webhook Error: Missing signature or secret config");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    try {
+      const expectedSignature = crypto
+        .createHmac("sha256", webhookSecret)
+        .update(rawBody)
+        .digest("hex");
+
+      // Prevent Timing Attacks using timingSafeEqual
+      const isAuthentic = crypto.timingSafeEqual(
+        Buffer.from(signature),
+        Buffer.from(expectedSignature),
+      );
+
+      if (!isAuthentic) {
+        throw new Error("Signature mismatch");
+      }
+    } catch (cryptoError) {
+      console.error("🚨 Webhook Signature Verification Failed:", cryptoError);
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+    }
+
+    // 2. Safe Parsing after Verification
     const body = JSON.parse(rawBody);
     const eventType = body.type;
-
     const payload = body.data;
+
     const userId =
       payload.metadata?.userId || payload.customer?.metadata?.userId;
     const customerEmail = payload.customer?.email || payload.email;
@@ -68,7 +102,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // 2. SUBSCRIPTION UPDATED OR CANCELLED (The Fix)
+    // 2. SUBSCRIPTION UPDATED OR CANCELLED
     if (
       eventType === "subscription.updated" ||
       eventType === "subscription.canceled" ||

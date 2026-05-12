@@ -86,3 +86,52 @@ export async function POST(req: Request) {
     );
   }
 }
+
+// SECURE DELETE METHOD
+export async function DELETE(req: Request) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session || !session.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const formId = searchParams.get("formId");
+
+    if (!formId) {
+      return NextResponse.json(
+        { error: "Form ID is required" },
+        { status: 400 },
+      );
+    }
+
+    // STRICT RLS: Update only if the form belongs to the user
+    const updateResult = await db
+      .update(forms)
+      .set({
+        hasWhatsapp: false,
+        whatsappStatus: "draft",
+        updatedAt: new Date(),
+      })
+      .where(and(eq(forms.id, formId), eq(forms.userId, session.user.id)))
+      .returning();
+
+    if (updateResult.length === 0) {
+      return NextResponse.json(
+        { error: "Form not found or access denied" },
+        { status: 403 },
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "WhatsApp flow disabled successfully",
+    });
+  } catch (error) {
+    console.error("Delete WA Flow Error:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
+  }
+}

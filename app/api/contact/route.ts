@@ -1,14 +1,48 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { contactFormValidator } from "@/lib/validators";
+import { contactRateLimit } from "@/lib/ratelimit";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { firstName, lastName, email, subject, message } = body;
+    // 1. RATE LIMITING CHECK
+    const ip =
+      req.headers.get("x-forwarded-for") ||
+      req.headers.get("x-real-ip") ||
+      "anonymous_ip";
+    const { success, limit, reset, remaining } =
+      await contactRateLimit.limit(ip);
 
-    // Resend email logic
+    if (!success) {
+      return NextResponse.json(
+        { success: false, error: "Too many requests. Please try again later." },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Limit": limit.toString(),
+            "X-RateLimit-Remaining": remaining.toString(),
+            "X-RateLimit-Reset": reset.toString(),
+          },
+        },
+      );
+    }
+
+    const body = await req.json();
+
+    // 2. SERVER-SIDE VALIDATION
+    const parsedBody = contactFormValidator.safeParse(body);
+    if (!parsedBody.success) {
+      return NextResponse.json(
+        { success: false, error: parsedBody.error.issues[0].message },
+        { status: 400 },
+      );
+    }
+
+    const { firstName, lastName, email, subject, message } = parsedBody.data;
+
+    // 3. SEND EMAIL
     await resend.emails.send({
       from: "Formix Website <noreply@formix.rikikashyap.dev>",
       to: "support@formix.rikikashyap.dev",

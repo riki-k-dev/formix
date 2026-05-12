@@ -22,7 +22,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // CHECKPOST
+    // 1. STRICT RATE LIMITING (Upstash) - Per User ID
+    const { success, limit, reset, remaining } =
+      await aiGenerationRateLimit.limit(session.user.id);
+
+    if (!success) {
+      return NextResponse.json(
+        {
+          error:
+            "Too many AI generation requests. Please try again in a minute.",
+        },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Limit": limit.toString(),
+            "X-RateLimit-Remaining": remaining.toString(),
+            "X-RateLimit-Reset": reset.toString(),
+          },
+        },
+      );
+    }
+
+    // 2. CHECK AI GENERATION QUOTAS (Database)
     const dbUser = await db.query.user.findFirst({
       where: eq(user.id, session.user.id),
       columns: { plan: true, aiGenerationsCount: true },
@@ -41,27 +62,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // RATELIMIT
-    const { success, limit, reset, remaining } =
-      await aiGenerationRateLimit.limit(session.user.id);
-    if (!success) {
-      return NextResponse.json(
-        {
-          error:
-            "Too many AI generation requests. Please try again in a minute.",
-        },
-        {
-          status: 429,
-          headers: {
-            "X-RateLimit-Limit": limit.toString(),
-            "X-RateLimit-Remaining": remaining.toString(),
-            "X-RateLimit-Reset": reset.toString(),
-          },
-        },
-      );
-    }
-
     const body = await req.json();
+
+    // 3. STRICT INPUT SANITIZATION (Zod) - Drops malicious injection
     const parsedBody = generateFormValidator.safeParse(body);
     if (!parsedBody.success) {
       return NextResponse.json(
@@ -109,6 +112,7 @@ export async function POST(req: Request) {
     const parsedSchema = JSON.parse(responseText);
     const formId = `frm_${crypto.randomUUID().replace(/-/g, "").substring(0, 12)}`;
 
+    // 4. DATABASE INSERT
     const [newForm] = await db
       .insert(forms)
       .values({
@@ -123,7 +127,7 @@ export async function POST(req: Request) {
       })
       .returning();
 
-    // INCREMENT USAGE
+    // 5. INCREMENT USAGE
     await db
       .update(user)
       .set({ aiGenerationsCount: sql`${user.aiGenerationsCount} + 1` })

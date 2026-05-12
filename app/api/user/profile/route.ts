@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { user } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { updateProfileValidator } from "@/lib/validators";
 
 export async function PATCH(req: Request) {
   try {
@@ -16,16 +17,19 @@ export async function PATCH(req: Request) {
     }
 
     const body = await req.json();
-    const { name } = body;
 
-    if (!name || name.trim() === "") {
-      return NextResponse.json({ error: "Name is required" }, { status: 400 });
+    // Strict Input Validation
+    const parsedBody = updateProfileValidator.safeParse(body);
+    if (!parsedBody.success) {
+      return NextResponse.json(
+        { error: parsedBody.error.issues[0].message },
+        { status: 400 },
+      );
     }
 
-    await db
-      .update(user)
-      .set({ name: name.trim() })
-      .where(eq(user.id, session.user.id));
+    const { name } = parsedBody.data;
+
+    await db.update(user).set({ name }).where(eq(user.id, session.user.id));
 
     return NextResponse.json({ success: true, message: "Profile updated" });
   } catch (error) {
