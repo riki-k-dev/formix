@@ -94,11 +94,14 @@ export async function POST(req: Request) {
     }
 
     if (!dbUser) {
-      console.error(
-        "Webhook Error: User not found for email/id:",
+      console.warn(
+        "Webhook Info: Ignored event for deleted/unknown user:",
         customerEmail || userId,
       );
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.json(
+        { received: true, note: "User ignored" },
+        { status: 200 },
+      );
     }
 
     // 1. PAYMENT SUCCESS / SUBSCRIPTION ACTIVE
