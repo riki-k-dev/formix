@@ -1,54 +1,81 @@
 import { NextResponse } from "next/server";
+import { headers } from "next/headers";
+import { Webhook } from "svix";
 import { db } from "@/db";
 import { user } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import crypto from "crypto";
 import {
   sendWelcomeProEmail,
   sendSubscriptionCancelledEmail,
   sendPaymentFailedEmail,
 } from "@/lib/email";
 
+type DodoWebhookEvent = {
+  type: string;
+  data: {
+    metadata?: { userId?: string };
+    customer?: {
+      email?: string;
+      customer_id?: string;
+      metadata?: { userId?: string };
+    };
+    email?: string;
+    customer_id?: string;
+    status?: string;
+    next_billing_date?: string;
+    cancel_at_next_billing_date?: boolean;
+    [key: string]: unknown;
+  };
+};
+
 export async function POST(req: Request) {
   try {
+    // 1. Get raw body and headers
     const rawBody = await req.text();
+    const headersList = await headers();
 
-    // 1. CRITICAL: Dodo Payments Signature Verification
-    const signature =
-      req.headers.get("webhook-signature") ||
-      req.headers.get("x-dodo-signature");
-    const webhookSecret = process.env.DODO_WEBHOOK_SECRET;
+    const svix_id = headersList.get("svix-id");
+    const svix_timestamp = headersList.get("svix-timestamp");
+    const svix_signature = headersList.get("svix-signature");
 
-    if (!signature || !webhookSecret) {
-      console.error("🚨 Webhook Error: Missing signature or secret config");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // 2. Initial header check
+    if (!svix_id || !svix_timestamp || !svix_signature) {
+      console.error("🚨 Webhook Error: Missing Svix headers");
+      return NextResponse.json(
+        { error: "Missing signatures" },
+        { status: 400 },
+      );
     }
 
-    try {
-      const expectedSignature = crypto
-        .createHmac("sha256", webhookSecret)
-        .update(rawBody)
-        .digest("hex");
-
-      // Prevent Timing Attacks using timingSafeEqual
-      const isAuthentic = crypto.timingSafeEqual(
-        Buffer.from(signature),
-        Buffer.from(expectedSignature),
+    // 3. Verify using official Svix package
+    const webhookSecret = process.env.DODO_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      console.error("🚨 Webhook Error: DODO_WEBHOOK_SECRET is not set in env");
+      return NextResponse.json(
+        { error: "Server misconfiguration" },
+        { status: 500 },
       );
+    }
 
-      if (!isAuthentic) {
-        throw new Error("Signature mismatch");
-      }
-    } catch (cryptoError) {
-      console.error("🚨 Webhook Signature Verification Failed:", cryptoError);
+    const wh = new Webhook(webhookSecret);
+    let body: DodoWebhookEvent;
+
+    try {
+      body = wh.verify(rawBody, {
+        "svix-id": svix_id,
+        "svix-timestamp": svix_timestamp,
+        "svix-signature": svix_signature,
+      }) as DodoWebhookEvent;
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Verification failed";
+      console.error("🚨 Webhook Signature Verification Failed:", errorMessage);
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
-    // 2. Safe Parsing after Verification
-    const body = JSON.parse(rawBody);
+    // Verification Successful! Now process the data.
     const eventType = body.type;
     const payload = body.data;
-
     const userId =
       payload.metadata?.userId || payload.customer?.metadata?.userId;
     const customerEmail = payload.customer?.email || payload.email;
