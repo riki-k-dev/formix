@@ -34,20 +34,23 @@ export async function POST(req: Request) {
     const rawBody = await req.text();
     const headersList = await headers();
 
-    const svix_id = headersList.get("svix-id");
-    const svix_timestamp = headersList.get("svix-timestamp");
-    const svix_signature = headersList.get("svix-signature");
+    // 2. Fetch headers (Checking both 'svix-' and Dodo's 'webhook-' prefixes)
+    const svix_id = headersList.get("svix-id") || headersList.get("webhook-id");
+    const svix_timestamp =
+      headersList.get("svix-timestamp") || headersList.get("webhook-timestamp");
+    const svix_signature =
+      headersList.get("svix-signature") || headersList.get("webhook-signature");
 
-    // 2. Initial header check
+    // 3. Initial header check
     if (!svix_id || !svix_timestamp || !svix_signature) {
-      console.error("🚨 Webhook Error: Missing Svix headers");
+      console.error("🚨 Webhook Error: Missing Svix/Webhook headers");
       return NextResponse.json(
         { error: "Missing signatures" },
         { status: 400 },
       );
     }
 
-    // 3. Verify using official Svix package
+    // 4. Verify using official Svix package
     const webhookSecret = process.env.DODO_WEBHOOK_SECRET;
     if (!webhookSecret) {
       console.error("🚨 Webhook Error: DODO_WEBHOOK_SECRET is not set in env");
