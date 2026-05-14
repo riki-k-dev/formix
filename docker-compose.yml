@@ -1,0 +1,17 @@
+services:
+  formix-web:
+    container_name: formix-web
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Pass essential keys needed during build time
+        DATABASE_URL: ${DATABASE_URL}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
