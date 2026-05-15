@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { user } from "@/db/schema";
-import { eq, and, isNotNull } from "drizzle-orm";
+import { eq, and, isNotNull, lt, inArray } from "drizzle-orm";
 import { sendRenewalReminderEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
@@ -9,14 +9,14 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
   try {
     // 1. Security Check: Validate Vercel Cron Secret
-    // Only Vercel's Cron engine should be able to trigger this.
     const authHeader = req.headers.get("authorization");
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 2. Calculate the target date (Exactly 7 days from today)
     const today = new Date();
+
+    // TASK 1: SEND 7-DAY RENEWAL REMINDERS
     const targetDate = new Date(today);
     targetDate.setDate(today.getDate() + 7);
 
@@ -24,22 +24,17 @@ export async function GET(req: Request) {
     const targetMonth = targetDate.getMonth();
     const targetDay = targetDate.getDate();
 
-    // 3. Fetch all Pro users who have an active subscription (haven't cancelled)
     const activeProUsers = await db.query.user.findMany({
       where: and(
         eq(user.plan, "pro"),
         eq(user.cancelAtPeriodEnd, false),
         isNotNull(user.subscriptionEndDate),
       ),
-      columns: {
-        email: true,
-        subscriptionEndDate: true,
-      },
+      columns: { email: true, subscriptionEndDate: true },
     });
 
     let emailsSent = 0;
 
-    // 4. Check if their renewal date matches the target date
     for (const dbUser of activeProUsers) {
       if (!dbUser.subscriptionEndDate) continue;
 
@@ -47,7 +42,6 @@ export async function GET(req: Request) {
       const expMonth = dbUser.subscriptionEndDate.getMonth();
       const expDay = dbUser.subscriptionEndDate.getDate();
 
-      // If the dates match perfectly, send the 7-day reminder
       if (
         expYear === targetYear &&
         expMonth === targetMonth &&
@@ -67,10 +61,42 @@ export async function GET(req: Request) {
       }
     }
 
+    // TASK 2: DOWNGRADE EXPIRED SUBSCRIPTIONS
+    // Find users who are Pro, marked to cancel, and their end date has passed
+    const expiredUsers = await db.query.user.findMany({
+      where: and(
+        eq(user.plan, "pro"),
+        eq(user.cancelAtPeriodEnd, true),
+        isNotNull(user.subscriptionEndDate),
+        lt(user.subscriptionEndDate, today), // Date is strictly less than right now
+      ),
+      columns: { id: true },
+    });
+
+    let downgradedCount = 0;
+
+    if (expiredUsers.length > 0) {
+      const expiredIds = expiredUsers.map((u) => u.id);
+
+      await db
+        .update(user)
+        .set({
+          plan: "starter",
+          cancelAtPeriodEnd: false, // Reset the pending cancellation flag
+          updatedAt: new Date(),
+        })
+        .where(inArray(user.id, expiredIds));
+
+      downgradedCount = expiredIds.length;
+      console.log(
+        `[CRON] Successfully downgraded ${downgradedCount} users to starter.`,
+      );
+    }
+
     return NextResponse.json({
       success: true,
-      processed: activeProUsers.length,
-      emailsSent,
+      remindersSent: emailsSent,
+      downgradedUsers: downgradedCount,
     });
   } catch (error) {
     console.error("Cron Job Error (Billing):", error);
