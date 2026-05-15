@@ -165,3 +165,42 @@ export async function sendSubmissionNotificationEmail(
     console.error("❌ Failed to send submission notification email:", error);
   }
 }
+
+// 6. Goodbye Email (Account Deletion)
+export async function sendGoodbyeEmail(toEmail: string, userName: string) {
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: toEmail,
+      subject: "Confirmation: Your Formix account has been deleted",
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #eaeaea; border-radius: 12px; background-color: #ffffff;">
+          <h2 style="color: #111; margin-top: 0;">Account Deleted Successfully</h2>
+          <p style="color: #444; font-size: 15px; line-height: 1.6;">
+            Hi ${userName},<br><br>
+            We are writing to confirm that your Formix account and all associated data—including your schemas, API keys, and submissions—have been permanently deleted as per your request.
+          </p>
+          <div style="background-color: #fff4f2; border: 1px solid #fee2e2; padding: 15px; border-radius: 8px; margin: 25px 0;">
+             <p style="margin: 0; font-size: 13px; color: #b91c1c;">
+               <strong>Security Note:</strong> In compliance with our privacy policy, your data has been completely erased from our servers and cannot be recovered.
+             </p>
+          </div>
+          <p style="color: #444; font-size: 15px; line-height: 1.6;">
+            We're sorry to see you go! We are constantly striving to improve our infrastructure for developers. If you have a moment, we would highly appreciate any feedback you might have—simply reply to this email.
+          </p>
+          <p style="color: #111; font-size: 15px; font-weight: 600; margin-top: 30px;">
+            Best wishes,<br>
+            The Formix Team
+          </p>
+          <hr style="border: 0; border-top: 1px solid #f3f4f6; margin: 30px 0;" />
+          <p style="color: #9ca3af; font-size: 12px; text-align: center; margin-bottom: 0;">
+            Formix - AI-Powered Headless Forms Infrastructure
+          </p>
+        </div>
+      `,
+    });
+    console.log(`✅ Goodbye email sent to ${toEmail}`);
+  } catch (error) {
+    console.error("❌ Goodbye Email Error:", error);
+  }
+}
