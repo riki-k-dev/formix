@@ -19,12 +19,17 @@ export async function getDodoBillingData(customerId: string) {
   const apiKey = process.env.DODO_API_KEY;
   if (!apiKey || !customerId) return { history: [], portalUrl: "" };
 
+  const isProd = process.env.NODE_ENV === "production";
+  const DODO_BASE_URL = isProd
+    ? "https://live.dodopayments.com"
+    : "https://test.dodopayments.com";
+
   try {
     console.log("🔍 Fetching Billing History for Customer:", customerId);
 
     // 1. Fetch History Safely
     const historyRes = await fetch(
-      `https://test.dodopayments.com/payments?customer_id=${customerId}`,
+      `${DODO_BASE_URL}/payments?customer_id=${customerId}`,
       {
         headers: { Authorization: `Bearer ${apiKey}` },
         cache: "no-store",
@@ -42,7 +47,7 @@ export async function getDodoBillingData(customerId: string) {
 
     // 2. Fetch Portal URL Safely
     const portalRes = await fetch(
-      `https://test.dodopayments.com/customers/${customerId}/customer-portal/session`,
+      `${DODO_BASE_URL}/customers/${customerId}/customer-portal/session`,
       {
         method: "POST",
         headers: {

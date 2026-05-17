@@ -23,7 +23,12 @@ export async function POST() {
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-    const response = await fetch("https://test.dodopayments.com/checkouts", {
+    const isProd = process.env.NODE_ENV === "production";
+    const DODO_BASE_URL = isProd
+      ? "https://live.dodopayments.com"
+      : "https://test.dodopayments.com";
+
+    const response = await fetch(`${DODO_BASE_URL}/checkouts`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${dodoApiKey}`,
