@@ -57,6 +57,24 @@ export default function Footer() {
                 <Mail size={18} />
               </a>
             </div>
+
+            {/* PRODUCT HUNT BADGE */}
+            <div className="mt-2 w-fit">
+              <a
+                href="https://www.producthunt.com/products/formix-2?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-formix-2"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block w-fit"
+              >
+                <img
+                  alt="Formix - AI-powered headless form infrastructure for developers | Product Hunt"
+                  width="250"
+                  height="54"
+                  src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1157644&theme=light&t=1779947629956"
+                  className="opacity-70 hover:opacity-100 transition-opacity duration-300 block"
+                />
+              </a>
+            </div>
           </div>
 
           {/* Product Links Box */}
