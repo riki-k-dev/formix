@@ -33,6 +33,29 @@ Formix is an AI-powered headless form infrastructure. Instead of just generating
 | **Infrastructure**  | Docker, Upstash Redis, Resend, UploadThing                       |
 | **Tooling**         | TypeScript, ESLint, PNPM                                         |
 
+## Architecture & Workflow
+
+Formix streamlines the transition from natural language requests to a fully deployed backend and automated data pipeline. 
+
+### System Architecture
+![Formix System Architecture](public/architecture-workflow-2.jpg)
+
+The Formix infrastructure operates across several interconnected layers:
+* **Actors**: Developers (Admins) prompt and manage the system, while End Users (Customers) fill out forms or chat with the bot.
+* **Frontend & Management**: Developers interact with the Formix Dashboard to send prompts, utilizing BetterAuth for login and Dodo Pay for subscriptions.
+* **AI Generation**: Groq AI (powered by LLaMA 3) processes prompts and saves the generated schema directly to the database.
+* **Core Infrastructure**: Submissions route through a Headless API Engine, are verified by an Upstash Rate Limiter to check limits, and are saved to Neon PostgreSQL.
+* **Data Collection Channels**: End users submit data via a Hosted Micro-Form UI, a Custom Frontend, or directly through the WhatsApp Cloud API via webhooks.
+* **Integrations & Automation**: Database saves trigger events to the Dispatch Engine, which sends email alerts via Resend or syncs payloads via Webhooks/Zapier to external apps like Slack, Discord, Notion, Google Sheets, and Airtable.
+
+### Core Workflow
+![Formix Workflow](public/architecture-workflow.jpg)
+
+The user journey eliminates manual backend configuration entirely:
+* **1. Prompt Generation**: The creator types a natural language request (e.g., "Build a startup waitlist") into the Formix AI Engine. Instead of relying on drag-and-drop boxes, the AI instantly builds the backend and database.
+* **2. Customer Interaction**: Customers can fill out the form through a Custom Web UI inside your app, or interact conversationally with a WhatsApp Bot without opening clunky links.
+* **3. Automated Routing**: Collected data is immediately routed through Automated Workflows without any manual data entry directly to where your team works (Slack Alerts, Google Sheets Sync, Notion Database).
+
 ## Project Structure
 
 ```text
