@@ -204,3 +204,39 @@ export async function sendGoodbyeEmail(toEmail: string, userName: string) {
     console.error("❌ Goodbye Email Error:", error);
   }
 }
+
+// 7. Data Rights Request (DPDP Compliance)
+export async function sendDataRightsRequestEmail(
+  userEmail: string,
+  userName: string,
+  requestType: string,
+  details: string,
+) {
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: "support@formix.rikikashyap.dev",
+      replyTo: userEmail,
+      subject: `[DPDP Request] ${requestType} - ${userName}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 12px; background-color: #ffffff; color: #111;">
+          <div style="background-color: #f59e0b; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; letter-spacing: 1px; display: inline-block; margin-bottom: 16px;">
+            DPDP DATA RIGHTS REQUEST
+          </div>
+          <h2 style="margin-top: 0;">New Request Received</h2>
+          <p><strong>User:</strong> ${userName} (${userEmail})</p>
+          <p><strong>Request Type:</strong> ${requestType}</p>
+          <hr style="border: none; border-top: 1px solid #eaeaea; margin: 20px 0;" />
+          <p><strong>Details:</strong></p>
+          <p style="white-space: pre-wrap; color: #444; background: #f9fafb; padding: 16px; border-radius: 8px; border: 1px solid #f3f4f6;">${details}</p>
+          <p style="font-size: 12px; color: #888; margin-top: 24px;">
+            Please acknowledge this request within 24 hours to comply with DPDP guidelines. You can reply directly to this email to contact the user.
+          </p>
+        </div>
+      `,
+    });
+    console.log(`✅ Data Rights Request email sent for ${userEmail}`);
+  } catch (error) {
+    console.error("❌ Failed to send Data Rights Request email:", error);
+  }
+}

@@ -150,6 +150,18 @@ export default function Footer() {
             >
               Cookie Policy
             </Link>
+            {/* Added Grievance Contact for DPDP - UI Fixed */}
+            <div className="mt-4 pt-4 border-t border-neutral-800">
+              <span className="text-xs text-neutral-600 block mb-1">
+                Grievance Officer:
+              </span>
+              <a
+                href="mailto:support@formix.rikikashyap.dev"
+                className="text-xs text-amber-500/80 hover:text-amber-400 transition-colors whitespace-nowrap block"
+              >
+                support@formix.rikikashyap.dev
+              </a>
+            </div>
           </div>
         </div>
 

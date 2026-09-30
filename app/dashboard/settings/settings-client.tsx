@@ -1,12 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { User, Bell, LifeBuoy } from "lucide-react";
+import { User, Bell, LifeBuoy, Shield } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import DeleteAccountModal from "@/components/dashboard/settings/DeleteAccountModal";
 
-// Skeletons
 import {
   ProfileTabSkeleton,
   NotificationsTabSkeleton,
@@ -23,6 +22,10 @@ const NotificationsTab = dynamic(
 );
 const HelpTab = dynamic(
   () => import("@/components/dashboard/settings/HelpTab"),
+  { loading: () => <HelpTabSkeleton /> },
+);
+const DataRightsTab = dynamic(
+  () => import("@/components/dashboard/settings/DataRightsTab"),
   { loading: () => <HelpTabSkeleton /> },
 );
 
@@ -42,7 +45,8 @@ export default function SettingsClient({ user }: { user: SessionUser }) {
   const [hasUnread, setHasUnread] = useState(false);
 
   const activeTab =
-    tabFromUrl && ["profile", "notifications", "help"].includes(tabFromUrl)
+    tabFromUrl &&
+    ["profile", "notifications", "privacy", "help"].includes(tabFromUrl)
       ? tabFromUrl
       : "profile";
 
@@ -73,7 +77,7 @@ export default function SettingsClient({ user }: { user: SessionUser }) {
             Settings
           </h1>
           <p className="text-neutral-400 text-sm">
-            Manage your account settings, preferences, and profile.
+            Manage your account settings, preferences, and privacy.
           </p>
         </div>
 
@@ -108,6 +112,23 @@ export default function SettingsClient({ user }: { user: SessionUser }) {
               </button>
 
               <button
+                onClick={() => changeTab("privacy")}
+                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+                  activeTab === "privacy"
+                    ? "bg-white text-black"
+                    : "text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900/50"
+                }`}
+              >
+                <Shield
+                  size={18}
+                  className={
+                    activeTab === "privacy" ? "text-black" : "text-amber-500"
+                  }
+                />
+                Data & Privacy
+              </button>
+
+              <button
                 onClick={() => changeTab("help")}
                 className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                   activeTab === "help"
@@ -128,6 +149,7 @@ export default function SettingsClient({ user }: { user: SessionUser }) {
               />
             )}
             {activeTab === "notifications" && <NotificationsTab />}
+            {activeTab === "privacy" && <DataRightsTab />}
             {activeTab === "help" && <HelpTab />}
           </div>
         </div>

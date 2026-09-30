@@ -29,7 +29,7 @@ export default function TermsOfServicePage() {
               Terms of Service
             </h1>
             <p className="text-neutral-400 text-sm md:text-base font-mono">
-              Last updated: April 28, 2026
+              Last updated: September 30, 2026 | [LEGAL REVIEW REQUIRED]
             </p>
           </div>
 
@@ -69,10 +69,9 @@ export default function TermsOfServicePage() {
 
             <h2>4. Prohibited Content</h2>
             <p>
-              You may not use Formix to collect sensitive personal information
-              without proper compliance (e.g., HIPAA), distribute malware,
-              engage in phishing, or collect illegal data. Formix reserves the
-              right to terminate endpoints violating these terms.
+              You may not use Formix to distribute malware, engage in phishing,
+              or collect illegal data. Formix reserves the right to terminate
+              endpoints violating these terms.
             </p>
 
             <h2>5. Payments and Refunds</h2>
@@ -85,9 +84,43 @@ export default function TermsOfServicePage() {
 
             <h2>6. Limitation of Liability</h2>
             <p>
-              Formix provides the service &quot;as is&quot;. We shall not be liable for
+              Formix provides the service "as is". We shall not be liable for
               any indirect, incidental, or consequential damages resulting from
               the use or inability to use our API infrastructure.
+            </p>
+
+            <h2>7. Data Protection & DPDP Act 2023 Compliance</h2>
+            <p>
+              By using Formix to collect data from your end-users, you
+              acknowledge that{" "}
+              <strong>you are the primary Data Fiduciary</strong> under the
+              Digital Personal Data Protection (DPDP) Act, 2023. Formix acts
+              strictly as a Data Processor on your behalf for the submissions
+              you receive.
+            </p>
+            <p>You agree to:</p>
+            <ul>
+              <li>
+                Obtain valid, verifiable consent from your end-users before
+                collecting their personal data via Formix APIs.
+              </li>
+              <li>
+                Provide clear purpose limitations and privacy notices to your
+                end-users.
+              </li>
+              <li>
+                Promptly honor data erasure or correction requests from your
+                end-users by deleting their submissions from the Formix
+                dashboard.
+              </li>
+              <li>
+                Notify Formix immediately if you suspect a personal data breach
+                related to your Formix account.
+              </li>
+            </ul>
+            <p>
+              For more details on how we protect your personal account data,
+              please refer to our Privacy Policy.
             </p>
           </article>
         </div>

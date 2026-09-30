@@ -27,6 +27,7 @@ export default function ContactClient() {
     email: "",
     subject: "",
     message: "",
+    consent: false,
   });
 
   const handleChange = (
@@ -34,11 +35,25 @@ export default function ContactClient() {
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >,
   ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value, type } = e.target as HTMLInputElement;
+    if (type === "checkbox") {
+      setFormData({
+        ...formData,
+        [name]: (e.target as HTMLInputElement).checked,
+      });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.consent) {
+      setError("You must consent to data processing to contact us.");
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
@@ -62,6 +77,7 @@ export default function ContactClient() {
         email: "",
         subject: "",
         message: "",
+        consent: false,
       });
     } catch {
       setError("Something went wrong. Please try again later.");
@@ -265,9 +281,36 @@ export default function ContactClient() {
                     />
                   </div>
 
+                  {/* DPDP Compliance Checkbox */}
+                  <div className="space-y-1.5 pb-2">
+                    <label className="flex items-start gap-3 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        name="consent"
+                        checked={formData.consent}
+                        onChange={handleChange}
+                        required
+                        className="mt-1 w-4 h-4 rounded border-neutral-700 bg-neutral-900 text-white focus:ring-0 focus:ring-offset-0 cursor-pointer accent-white shrink-0"
+                      />
+                      <span className="text-xs text-neutral-400 group-hover:text-neutral-300 transition-colors leading-relaxed">
+                        I consent to Formix processing my personal data to
+                        respond to my inquiry, in accordance with the{" "}
+                        <a
+                          href="/privacy"
+                          className="text-white hover:underline"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Privacy Policy
+                        </a>
+                        .
+                      </span>
+                    </label>
+                  </div>
+
                   <button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !formData.consent}
                     className="w-full bg-white text-black font-medium py-3 rounded-lg mt-2 hover:bg-neutral-200 transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {isSubmitting ? (

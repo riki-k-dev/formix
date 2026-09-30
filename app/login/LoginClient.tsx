@@ -43,6 +43,9 @@ export default function LoginClient() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  // DPDP Compliance state
+  const [signupConsent, setSignupConsent] = useState(false);
+
   const handleSocialLogin = async (provider: "google" | "github") => {
     setSocialLoading(provider);
     setError(null);
@@ -116,6 +119,15 @@ export default function LoginClient() {
         router.push("/dashboard");
         router.refresh();
       } else {
+        // DPDP Check
+        if (!signupConsent) {
+          setError(
+            "You must agree to the Privacy Policy and Terms of Service to create an account.",
+          );
+          setIsLoading(false);
+          return;
+        }
+
         const { error } = await authClient.signUp.email({
           name,
           email,
@@ -401,9 +413,51 @@ export default function LoginClient() {
                         </div>
                       </div>
 
+                      {/* DPDP Compliance Checkbox for Sign Up Only */}
+                      {!isLogin && (
+                        <div className="space-y-1.5 pb-2">
+                          <label className="flex items-start gap-3 cursor-pointer group">
+                            <input
+                              type="checkbox"
+                              checked={signupConsent}
+                              onChange={(e) =>
+                                setSignupConsent(e.target.checked)
+                              }
+                              className="mt-1 w-4 h-4 rounded border-neutral-700 bg-neutral-900 text-white focus:ring-0 focus:ring-offset-0 cursor-pointer accent-white shrink-0"
+                            />
+                            <span className="text-xs text-neutral-400 group-hover:text-neutral-300 transition-colors leading-relaxed">
+                              I agree to the{" "}
+                              <a
+                                href="/terms"
+                                className="text-white hover:underline"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                Terms of Service
+                              </a>{" "}
+                              and consent to the processing of my personal data
+                              as described in the{" "}
+                              <a
+                                href="/privacy"
+                                className="text-white hover:underline"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                Privacy Policy
+                              </a>
+                              .
+                            </span>
+                          </label>
+                        </div>
+                      )}
+
                       <button
                         type="submit"
-                        disabled={isLoading || !!socialLoading}
+                        disabled={
+                          isLoading ||
+                          !!socialLoading ||
+                          (!isLogin && !signupConsent)
+                        }
                         className="w-full mt-6 py-3 bg-white text-black font-bold text-sm rounded-lg hover:bg-neutral-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer shadow-lg shadow-white/5"
                       >
                         {isLoading && (

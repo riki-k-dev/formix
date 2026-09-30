@@ -26,7 +26,6 @@ export const formFieldValidator = z.object({
   options: z.array(z.string().max(100)).optional(),
 });
 
-// Extract the inferred type to use in our dynamic validator
 export type FormField = z.infer<typeof formFieldValidator>;
 
 export const updateFormValidator = z.object({
@@ -66,6 +65,9 @@ export const contactFormValidator = z.object({
     .trim()
     .min(10, "Message must be at least 10 characters")
     .max(2000, "Message is too long"),
+  consent: z.literal(true, {
+    message: "You must consent to data processing to contact us.",
+  }),
 });
 
 export const updateProfileValidator = z.object({
@@ -97,8 +99,6 @@ export const whatsappConfigValidator = z.object({
     .max(500, "Access Token is too long"),
 });
 
-// UTILITIES & DYNAMIC VALIDATION
-
 export function validateWebhookUrl(
   provider: string,
   url: string,
@@ -111,17 +111,16 @@ export function validateWebhookUrl(
     const parsedUrl = new URL(url);
     const hostname = parsedUrl.hostname;
 
-    // 1. SSRF PROTECTION: Block Private IPv4 Addresses & Link-Local (AWS/GCP Metadata)
     const isIp = /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname);
     if (isIp) {
       const parts = hostname.split(".").map(Number);
       if (
-        parts[0] === 10 || 
-        (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) || 
-        (parts[0] === 192 && parts[1] === 168) || 
-        parts[0] === 127 || 
-        parts[0] === 0 || 
-        (parts[0] === 169 && parts[1] === 254) 
+        parts[0] === 10 ||
+        (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
+        (parts[0] === 192 && parts[1] === 168) ||
+        parts[0] === 127 ||
+        parts[0] === 0 ||
+        (parts[0] === 169 && parts[1] === 254)
       ) {
         return {
           isValid: false,
@@ -130,7 +129,6 @@ export function validateWebhookUrl(
       }
     }
 
-    // 2. SSRF PROTECTION: Block common internal hostnames
     const forbiddenHostnames = ["localhost", "metadata.google.internal"];
     if (forbiddenHostnames.includes(hostname)) {
       return {
@@ -139,7 +137,6 @@ export function validateWebhookUrl(
       };
     }
 
-    // 3. Provider-Specific Format Validation
     switch (provider) {
       case "discord":
         if (
@@ -179,7 +176,6 @@ export function validateWebhookUrl(
   }
 }
 
-// Dynamically validates incoming submission data against the generated JSON schema
 export function validateDynamicSubmission(
   schemaFields: FormField[],
   submissionData: unknown,
@@ -243,7 +239,6 @@ export function validateDynamicSubmission(
     }
   }
 
-  // .strip() removes any extra fields sent by a malicious user that aren't in the schema
   const dynamicZodSchema = z.object(shape).strip();
   return dynamicZodSchema.safeParse(submissionData);
 }

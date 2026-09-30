@@ -6,10 +6,9 @@ const IV_LENGTH = 16;
 
 export function encryptConfig(text: string): string {
   if (!ENCRYPTION_KEY) {
-    console.warn(
-      "WARNING: ENCRYPTION_KEY is missing in .env. Data saved unencrypted.",
+    throw new Error(
+      "CRITICAL: ENCRYPTION_KEY is missing in environment variables. Aborting encryption to prevent data leak.",
     );
-    return text;
   }
 
   try {
@@ -25,27 +24,35 @@ export function encryptConfig(text: string): string {
     return `${iv.toString("hex")}:${authTag}:${encrypted}`;
   } catch (error) {
     console.error("Encryption failed:", error);
-    throw new Error("Failed to encrypt data");
+    throw new Error("Failed to encrypt data securely.");
   }
 }
 
 export function decryptConfig(text: string): string {
   if (!text) return text;
 
+  if (!ENCRYPTION_KEY) {
+    throw new Error(
+      "CRITICAL: ENCRYPTION_KEY is missing. Cannot decrypt data.",
+    );
+  }
+
   const parts = text.split(":");
 
   if (parts.length !== 3) {
-    return text;
+    throw new Error(
+      "Invalid encrypted data format detected. Possible malicious plaintext injection.",
+    );
   }
 
   const [ivHex, authTagHex, encryptedHex] = parts;
 
   if (ivHex.length !== 32 || authTagHex.length !== 32) {
-    return text;
+    throw new Error("Corrupted or invalid encrypted payload.");
   }
 
   try {
-    const key = Buffer.from(ENCRYPTION_KEY!, "hex");
+    const key = Buffer.from(ENCRYPTION_KEY, "hex");
     const iv = Buffer.from(ivHex, "hex");
     const authTag = Buffer.from(authTagHex, "hex");
 
@@ -57,10 +64,9 @@ export function decryptConfig(text: string): string {
 
     return decrypted;
   } catch (error) {
-    console.error(
-      "Decryption failed for an item, returning plain text fallback:",
-      error,
+    console.error("Decryption failed for an item:", error);
+    throw new Error(
+      "Decryption failed. Data might be corrupted or tampered with.",
     );
-    return text;
   }
 }

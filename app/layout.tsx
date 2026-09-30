@@ -6,6 +6,7 @@ import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { CSPostHogProvider } from "./providers";
+import ConsentBanner from "@/components/ui/ConsentBanner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -105,6 +106,7 @@ export default function RootLayout({
           <SpeedInsights />
           {gaId && <GoogleAnalytics gaId={gaId} />}
         </CSPostHogProvider>
+        <ConsentBanner />
       </body>
     </html>
   );
